@@ -1,0 +1,37 @@
+# Secrets & environment
+.env
+.env.*
+!.env.example
+
+# Python
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+.coverage
+*.egg-info/
+build/
+dist/
+
+# Node
+node_modules/
+
+# Data & model artifacts
+data/
+*.parquet
+models/
+*.ckpt
+
+# Power BI / Fabric local artifacts
+*.pbix
+*.abf
+.pbi/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
