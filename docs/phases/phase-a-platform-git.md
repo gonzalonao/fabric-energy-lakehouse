@@ -112,6 +112,27 @@
 - [ ] `[CLAUDE]` Normalize filenames (`a1-workspaces.png`, …), commit evidence, tick the
       done-criteria boxes above, set Status ✅, append the session log.
 
+### A11 `[CLAUDE]` 🎓 Understanding check — Git integration
+
+- [ ] Before closing the phase, Claude quizzes Gonzalo (`AskUserQuestion`) on the
+      concepts this phase exercised: what Fabric Git integration binds (workspace ↔
+      branch/folder), why a notebook stored as `.py` (not `.ipynb`) is the thing that
+      makes it reviewable in a PR, and dev-branch (`develop`) vs prod-deploy (`main` +
+      fabric-cicd) direction. Draw the sync topology as a small diagram if it helps.
+- [ ] Note any shaky answers here so they resurface in the Phase G interview drills.
+
+### A12 `[CLAUDE]` + `[YOU]` 📣 Portfolio — seed the entry
+
+- [ ] `[CLAUDE]` Create a **draft** portfolio entry
+      `../../portfolio/astro/src/content/projects/fabric-energy-lakehouse.mdx`
+      (+ Spanish mirror in `projectsEs/`): title, one-line summary, tech tags,
+      `status: "in-progress"`, and a placeholder architecture Mermaid. Match the shape of
+      the existing `azure-pipeline.mdx`. Keep `featured`/`order` conservative until it
+      ships.
+- [ ] `[YOU]` Skim the draft, adjust wording/voice, and decide whether to show it as WIP
+      now or hold it unlisted until Phase G. (Reminder: the full write-up lands at 📣 in
+      Phases C, E, G — this is just the stub so the entry exists.)
+
 ## Gotchas & deviations
 
 *(append as encountered — UI names drift in preview features; if a step doesn't match
