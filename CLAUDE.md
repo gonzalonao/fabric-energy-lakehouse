@@ -4,9 +4,8 @@
 
 Batch energy lakehouse on Microsoft Fabric (flagship, P1) plus the Real-Time
 Intelligence extension under `streaming/` (P2). Plans:
-`wiki/learning/fabric/fabric-p1-energy-lakehouse.md` and
-`fabric-p2-realtime-intelligence.md` in the workspace wiki (master:
-`fabric-portfolio-plan.md`).
+`docs/fabric-p1-energy-lakehouse.md` and `docs/fabric-p2-realtime-intelligence.md`
+(master: `fabric-portfolio-plan.md` in the workspace wiki).
 
 ## Branching — develop-flow
 
