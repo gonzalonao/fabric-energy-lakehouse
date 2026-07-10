@@ -7,10 +7,16 @@ Intelligence extension under `streaming/` (P2). Plans:
 `docs/fabric-p1-energy-lakehouse.md` and `docs/fabric-p2-realtime-intelligence.md`
 (master: `fabric-portfolio-plan.md` in the workspace wiki).
 
-**Execution state lives in `docs/phases/`** — one step-by-step guide per phase with
-`[YOU]`/`[CLAUDE]` roles, checkboxes, and a session log. At session start, read the
-active phase file; keep its checkboxes, status line, and session log updated as work
-progresses (conventions in `docs/phases/README.md`).
+**Execution state lives in `docs/phases/`** — one step-by-step guide per phase (P1:
+`phase-*.md`, P2: `p2-phase-*.md`) with `[YOU]`/`[CLAUDE]` roles, checkboxes, and a
+session log. At session start, read the active phase file; keep its checkboxes, status
+line, and session log updated as work progresses (conventions in
+`docs/phases/README.md`).
+
+**Instructions to Gonzalo are always given in great detail** — exact portal paths,
+button names, values to type, and how to verify the result, in the style of the
+`[YOU]` steps in `docs/phases/`. This applies to ad-hoc guidance too, not just the
+phase guides.
 
 ## Branching — develop-flow
 
@@ -43,7 +49,9 @@ afterthoughts, and act on the checkpoints seeded in the phase guides.
    remind Gonzalo to update the entry (`fabric-energy-lakehouse.mdx`) and help draft it.
    Cadence: seed a draft at end of **Phase A**, add the engineering narrative at
    **Phase C**, add the Power BI showcase at **Phase E**, finalize (status, demo, links)
-   at **Phase G**. Proactively flag portfolio-worthy moments even between checkpoints.
+   at **Phase G**; P2 extends the same entry with the streaming section at **P2 Phase E**
+   (assets captured at the 📣 points in P2 Phases B–D). Proactively flag portfolio-worthy
+   moments even between checkpoints.
 2. **Reproducible documentation.** Keep `docs/phases/` the truthful, step-by-step build
    journal (conventions in `docs/phases/README.md`): tick checkboxes, keep the status
    line and session log current, and record every deviation — the standard is that a

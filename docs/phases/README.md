@@ -1,9 +1,10 @@
 # Phase execution guides
 
-One file per P1 phase (see [fabric-p1-energy-lakehouse.md](../fabric-p1-energy-lakehouse.md)).
-Each file is the **single source of truth for that phase**: the exact steps to follow, who
-does each one, what has been done, and what went wrong. A fresh Claude session should be
-able to resume work from these files alone.
+One file per phase — P1 (see [fabric-p1-energy-lakehouse.md](../fabric-p1-energy-lakehouse.md))
+and P2 (see [fabric-p2-realtime-intelligence.md](../fabric-p2-realtime-intelligence.md);
+files prefixed `p2-`). Each file is the **single source of truth for that phase**: the
+exact steps to follow, who does each one, what has been done, and what went wrong. A
+fresh Claude session should be able to resume work from these files alone.
 
 ## Conventions
 
@@ -27,6 +28,8 @@ able to resume work from these files alone.
 
 ## Files
 
+### P1 — Energy lakehouse (D1–D7)
+
 | Phase | File | Days | Status |
 |---|---|---|---|
 | A — Platform & Git | [phase-a-platform-git.md](phase-a-platform-git.md) | D1 | 🔄 |
@@ -36,3 +39,13 @@ able to resume work from these files alone.
 | E — Serving | [phase-e-serving.md](phase-e-serving.md) | D6 | ⬜ |
 | F — CI/CD | [phase-f-cicd.md](phase-f-cicd.md) | D6–D7 | ⬜ |
 | G — Evidence & docs | [phase-g-evidence-docs.md](phase-g-evidence-docs.md) | D7 | ⬜ |
+
+### P2 — Real-Time Intelligence (D8–D11)
+
+| Phase | File | Days | Status |
+|---|---|---|---|
+| A — KQL foundations | [p2-phase-a-kql-foundations.md](p2-phase-a-kql-foundations.md) | D8 (half) | ⬜ |
+| B — Stream ingestion | [p2-phase-b-stream-ingestion.md](p2-phase-b-stream-ingestion.md) | D8–D9 | ⬜ |
+| C — KQL analytics + dashboard | [p2-phase-c-kql-analytics-dashboard.md](p2-phase-c-kql-analytics-dashboard.md) | D9–D10 | ⬜ |
+| D — Activator | [p2-phase-d-activator.md](p2-phase-d-activator.md) | D10 | ⬜ |
+| E — Unification + evidence | [p2-phase-e-unification-evidence.md](p2-phase-e-unification-evidence.md) | D11 | ⬜ |
