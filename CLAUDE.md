@@ -7,6 +7,11 @@ Intelligence extension under `streaming/` (P2). Plans:
 `docs/fabric-p1-energy-lakehouse.md` and `docs/fabric-p2-realtime-intelligence.md`
 (master: `fabric-portfolio-plan.md` in the workspace wiki).
 
+**Execution state lives in `docs/phases/`** — one step-by-step guide per phase with
+`[YOU]`/`[CLAUDE]` roles, checkboxes, and a session log. At session start, read the
+active phase file; keep its checkboxes, status line, and session log updated as work
+progresses (conventions in `docs/phases/README.md`).
+
 ## Branching — develop-flow
 
 - `feature/*` branches off `develop`; PRs merge into `develop`.
