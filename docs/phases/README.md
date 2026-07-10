@@ -9,6 +9,10 @@ able to resume work from these files alone.
 
 - **`[YOU]`** — manual steps Gonzalo performs (Fabric portal, GitHub UI, screenshots).
 - **`[CLAUDE]`** — steps Claude performs locally (repo files, git, code review, docs).
+- **📣 Portfolio** — a checkpoint to add/update the portfolio entry at
+  `../../portfolio/astro` (`src/content/projects/fabric-energy-lakehouse.mdx`).
+- **🎓 Learning** — a checkpoint where Claude actively checks understanding (quiz,
+  diagram, authoritative sources) before the work builds on a new Fabric concept.
 - Steps are numbered `A1, A2, …` per phase and ordered — do them top to bottom;
   interleaving matters (e.g. Claude can't verify a sync before you commit it).
 - Checkboxes track progress. **Tick them as steps complete** — Claude updates the file
@@ -27,8 +31,8 @@ able to resume work from these files alone.
 |---|---|---|---|
 | A — Platform & Git | [phase-a-platform-git.md](phase-a-platform-git.md) | D1 | ⬜ |
 | B — Batch ingestion | [phase-b-batch-ingestion.md](phase-b-batch-ingestion.md) | D2–D3 | ⬜ |
-| C — Transform & DQ | *(pending format approval)* | D3–D5 | — |
-| D — Orchestration | *(pending)* | D5 | — |
-| E — Serving | *(pending)* | D6 | — |
-| F — CI/CD | *(pending)* | D6–D7 | — |
-| G — Evidence & docs | *(pending)* | D7 | — |
+| C — Transform & DQ | [phase-c-transform-dq.md](phase-c-transform-dq.md) | D3–D5 | ⬜ |
+| D — Orchestration | [phase-d-orchestration.md](phase-d-orchestration.md) | D5 (+2 passive) | ⬜ |
+| E — Serving | [phase-e-serving.md](phase-e-serving.md) | D6 | ⬜ |
+| F — CI/CD | [phase-f-cicd.md](phase-f-cicd.md) | D6–D7 | ⬜ |
+| G — Evidence & docs | [phase-g-evidence-docs.md](phase-g-evidence-docs.md) | D7 | ⬜ |

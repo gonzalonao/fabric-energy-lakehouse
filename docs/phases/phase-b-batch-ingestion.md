@@ -57,6 +57,16 @@ Stretch (only if B finishes early): PVPC via `api.esios.ree.es` — token rules 
       with a REST source because the payload must land in Files.
 - [ ] Variable libraries (preview): `https://learn.microsoft.com/fabric/cicd/variable-library/variable-library-overview`.
 
+### B1.5 `[CLAUDE]` 🎓 Understanding check — ingestion & watermarks
+
+- [ ] Claude diagrams the `pl_ingest_ree` → backfill/daily topology (Web/Copy source,
+      Bronze Files layout, watermark read via Lookup / write via notebook) and quizzes
+      Gonzalo (`AskUserQuestion`) on the drill answers: **Copy vs Web activity**, why the
+      **watermark is written only after a successful copy**, and what makes a re-run
+      **idempotent** here (deterministic path + overwrite). Pull a MS Learn source if a
+      point is fuzzy.
+- [ ] Record weak spots for the Phase G drills.
+
 ### B2 `[YOU]` Variable library `vl_energy`
 
 - [ ] `ws-energy-dev` root → **+ New item** → **Variable library** → `vl_energy`.
@@ -183,6 +193,10 @@ you pull it back.
 - [ ] Move screenshots into `docs/evidence/phase-b/`, normalize names, commit.
 - [ ] Update this file: tick done-criteria, Status ✅, session log; note actual backfill
       duration + any API quirks under Gotchas (feeds the README + interview drills).
+- [ ] 📣 **Portfolio (capture, not publish):** stash the money screenshots (incremental
+      vs backfill run history, idempotent re-run) and the backfill duration for the
+      portfolio entry — they land in the write-up at the Phase C 📣 checkpoint. No entry
+      edit yet; just make sure the assets are named and kept.
 
 ## Gotchas & deviations
 
