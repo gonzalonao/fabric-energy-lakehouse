@@ -1,6 +1,6 @@
 # Phase A — Platform & Git
 
-**Status:** ⬜ not started
+**Status:** 🔄 in progress (at step A1)
 **Days:** D1 (≈ 2026-07-11) · **Plan:** [P1 §Phase A](../fabric-p1-energy-lakehouse.md)
 
 ## Outcome (done criteria)
@@ -140,4 +140,6 @@ what you see, note here what it actually looked like)*
 
 ## Session log
 
-*(one dated line per session — e.g. `2026-07-11 — A1–A5 done; PAT expires 2026-08-15`)*
+- 2026-07-10 — Repo prep before D1: added portfolio/learning/doc standing objectives to
+  CLAUDE.md, wove 📣/🎓 checkpoints into all phase guides, added C–G guides. Phase A
+  opened; A1–A5 are Gonzalo's next (Fabric portal). Nothing built in Fabric yet.

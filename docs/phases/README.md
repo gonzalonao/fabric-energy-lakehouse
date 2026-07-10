@@ -29,7 +29,7 @@ able to resume work from these files alone.
 
 | Phase | File | Days | Status |
 |---|---|---|---|
-| A — Platform & Git | [phase-a-platform-git.md](phase-a-platform-git.md) | D1 | ⬜ |
+| A — Platform & Git | [phase-a-platform-git.md](phase-a-platform-git.md) | D1 | 🔄 |
 | B — Batch ingestion | [phase-b-batch-ingestion.md](phase-b-batch-ingestion.md) | D2–D3 | ⬜ |
 | C — Transform & DQ | [phase-c-transform-dq.md](phase-c-transform-dq.md) | D3–D5 | ⬜ |
 | D — Orchestration | [phase-d-orchestration.md](phase-d-orchestration.md) | D5 (+2 passive) | ⬜ |
