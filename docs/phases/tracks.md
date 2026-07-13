@@ -6,7 +6,8 @@ understood hands-on, plus a real comparison of their trade-offs.
 
 | | **Track A — Azure DevOps** | **Track B — GitHub** |
 |---|---|---|
-| Status | 🔄 **active** (started 2026-07-13) | ⬜ planned (after Track A) |
+| Progress record | [track-a-progress.md](track-a-progress.md) | [track-b-progress.md](track-b-progress.md) |
+| Status | 🔄 **active** (started 2026-07-13) | ⬜ planned (kickoff gate in its tracker) |
 | Tenant | Institution (ESESA/UCAM) student tenant | Own Entra tenant (Azure free account) |
 | Capacity | Fabric trial capacity | **Paid F2** funded by the Azure $200/30-day credit — paused when idle; subscription auto-disables at credit end (no charge without explicit PAYG upgrade) |
 | Fabric Git sync | Workspace ↔ **Azure DevOps** repo, branch `develop`, folder `/fabric` | Workspace ↔ **GitHub** (this repo), branch `develop`, folder `/fabric` |

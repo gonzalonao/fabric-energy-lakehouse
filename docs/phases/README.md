@@ -12,6 +12,12 @@ definitions, the git mirroring layout, and the **mirror rule**: divergent steps 
 as `[Track A]`/`[Track B]` variant blocks inside the same phase file, and an edit to one
 variant must keep its sibling consistent in the same commit.
 
+**Progress is recorded per track**, not in the guides: P1 phase guides hold the
+*instructions* (plain bullets, no checkboxes); each run ticks its own checklist in
+[track-a-progress.md](track-a-progress.md) / [track-b-progress.md](track-b-progress.md)
+— per-step checkboxes, per-phase status, done-criteria, and that track's session log.
+(P2 guides still carry inline checkboxes — single-run until a track is chosen.)
+
 ## Conventions
 
 - **`[YOU]`** — manual steps Gonzalo performs (Fabric portal, GitHub UI, screenshots).
@@ -22,15 +28,17 @@ variant must keep its sibling consistent in the same commit.
   diagram, authoritative sources) before the work builds on a new Fabric concept.
 - Steps are numbered `A1, A2, …` per phase and ordered — do them top to bottom;
   interleaving matters (e.g. Claude can't verify a sync before you commit it).
-- Checkboxes track progress. **Tick them as steps complete** — Claude updates the file
-  when told a `[YOU]` step is done, and after finishing its own steps.
-- The `Status` line at the top of each file is one of:
-  `⬜ not started · 🔄 in progress (at step X) · ✅ done`.
-- **Session log** at the bottom of each file: one dated line per working session with
+- **Progress lives in the track trackers** (`track-a-progress.md` / `track-b-progress.md`
+  for P1): tick the step there as it completes — Claude updates the tracker when told a
+  `[YOU]` step is done, and after finishing its own steps. P2 guides keep inline
+  checkboxes for now.
+- Per-phase status (`⬜ · 🔄 (at step X) · ✅`) lives in the tracker next to each phase
+  heading, plus a top-level Status line per tracker.
+- **Session log** at the bottom of each tracker: one dated line per working session with
   what was completed and any deviation from the written steps. Deviations also get a
-  bullet under *Gotchas & deviations* so the steps stay truthful.
+  bullet under the phase guide's *Gotchas & deviations* so the steps stay truthful.
 - To resume in a new session, tell Claude:
-  *"Read docs/phases/phase-<x>.md — we're at step <n>."*
+  *"Read docs/phases/track-<a|b>-progress.md — we're at step <n>."*
 
 ## Files
 

@@ -1,17 +1,17 @@
 # Phase D — Orchestration
 
-**Status:** ⬜ not started
+**Progress:** tracked per run in [track-a-progress.md](track-a-progress.md) · [track-b-progress.md](track-b-progress.md)
 **Days:** D5 (build) + 2 passive days (proof) · **Plan:** [P1 §Phase D](../fabric-p1-energy-lakehouse.md) ·
 **Requires:** Phase C ✅
 
 ## Outcome (done criteria)
 
-- [ ] Master pipeline `pl_daily_refresh` runs ingest → DQ gate → silver → gold
+- Master pipeline `pl_daily_refresh` runs ingest → DQ gate → silver → gold
       end-to-end from one trigger, params flowing through.
-- [ ] Daily schedule moved to the master; the old `pl_ingest_daily` schedule disabled.
-- [ ] **Green in run history two days straight** (scheduled runs, not manual) —
+- Daily schedule moved to the master; the old `pl_ingest_daily` schedule disabled.
+- **Green in run history two days straight** (scheduled runs, not manual) —
       screenshots.
-- [ ] Failure alert fires from the master (single alert, not one per child).
+- Failure alert fires from the master (single alert, not one per child).
 
 ## Decisions (made up front)
 
@@ -26,8 +26,8 @@
 
 ### D1 `[YOU]` Build `pl_daily_refresh`
 
-- [ ] Folder `orchestration` → **+ New item** → **Data pipeline** → `pl_daily_refresh`.
-- [ ] Chain with **On success** dependencies, in order:
+- Folder `orchestration` → **+ New item** → **Data pipeline** → `pl_daily_refresh`.
+- Chain with **On success** dependencies, in order:
   1. **Invoke pipeline** → `pl_ingest_daily` (wait on completion = ON).
   2. Three **Notebook** activities → `nb_bronze_to_silver`, base parameter
      `p_indicator` = each indicator; chain them **sequentially** (shared Spark session
@@ -35,37 +35,37 @@
   3. **Notebook** → `nb_dq_gate`, `p_stage` = `silver`.
   4. **Notebook** → `nb_gold_build`.
   5. **Notebook** → `nb_gold_mlv`.
-- [ ] **Office 365 Outlook** activity fed by **On fail** from every stage (select all
+- **Office 365 Outlook** activity fed by **On fail** from every stage (select all
       activities as sources, red dependencies). To: `v_alert_email` (library variable).
       Subject includes `@{pipeline().RunId}` + which stage (use
       `@{coalesce(...)}`-style or keep it simple: one generic subject, the run link
       shows the failed stage).
-- [ ] Manual full run → all green in Monitor, end-to-end. Screenshot the run detail
+- Manual full run → all green in Monitor, end-to-end. Screenshot the run detail
       showing every stage.
-- [ ] Commit (`feat(orchestration): master daily refresh pipeline`).
+- Commit (`feat(orchestration): master daily refresh pipeline`).
 
 ### D2 `[YOU]` Move the schedule
 
-- [ ] `pl_ingest_daily` → **Run → Schedule** → **disable/delete** the Phase B schedule.
-- [ ] `pl_daily_refresh` → **Run → Schedule** → daily **08:00 Europe/Madrid**, end date
+- `pl_ingest_daily` → **Run → Schedule** → **disable/delete** the Phase B schedule.
+- `pl_daily_refresh` → **Run → Schedule** → daily **08:00 Europe/Madrid**, end date
       2026-07-31. Commit.
 
 ### D3 `[YOU]` Two-day green proof (passive — runs during Phases E/F)
 
-- [ ] Morning after day 1: Monitor → scheduled `pl_daily_refresh` run is green;
+- Morning after day 1: Monitor → scheduled `pl_daily_refresh` run is green;
       screenshot **with the trigger type visible** (scheduled, not manual).
-- [ ] Morning after day 2: same again. Two consecutive scheduled greens = done
+- Morning after day 2: same again. Two consecutive scheduled greens = done
       criterion. If a day fails: fix, note in Gotchas, and the 2-day counter restarts —
       be honest about it.
 
 ### D4 `[CLAUDE]` Review + evidence
 
-- [ ] Pull; review `pl_daily_refresh` JSON: dependency wiring (nothing accidentally
+- Pull; review `pl_daily_refresh` JSON: dependency wiring (nothing accidentally
       parallel), wait-on-completion on the Invoke, alert coverage of all stages.
-- [ ] Evidence into `docs/evidence/phase-d/`; tick done-criteria, Status ✅, session
+- Evidence into `docs/evidence/phase-d/`; tick done-criteria, Status ✅, session
       log (include stage-by-stage timings from the first full run — feeds capacity
       notes in Phase G).
-- [ ] 🎓 **Understanding check:** Claude confirms Gonzalo can explain **why the DQ gate
+- 🎓 **Understanding check:** Claude confirms Gonzalo can explain **why the DQ gate
       sits between silver and gold** (bad data never reaches Gold) and **why no semantic-
       model refresh activity is needed** (Direct Lake reads Delta directly — a common
       Import-mode reflex to avoid). Quick `AskUserQuestion` if either is fuzzy.
@@ -77,4 +77,4 @@ high-concurrency mode if the chain is slow; Invoke-pipeline wait behavior)*
 
 ## Session log
 
-*(one dated line per session)*
+*Moved to the per-track trackers ([A](track-a-progress.md) / [B](track-b-progress.md)) — phase-specific gotchas stay above.*
