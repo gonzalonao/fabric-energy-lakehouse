@@ -138,8 +138,28 @@
 *(append as encountered — UI names drift in preview features; if a step doesn't match
 what you see, note here what it actually looked like)*
 
+- 2026-07-13 — **A5 blocked: GitHub Git provider disabled on the tenant.** In Git
+  integration the GitHub option is greyed out ("Contact an admin to allow this git
+  provider"); only Azure DevOps is available. The account is a student account on the
+  institution's (ESESA/UCAM) tenant — no tenant admin, Admin portal shows no Tenant
+  settings.
+- 2026-07-13 — **"Create own tenant + free Fabric trial" researched and ruled out.**
+  As of late 2025/2026, Microsoft blocks Fabric trial activation on newly created
+  Entra/M365 tenants (anti-abuse policy; ~90-day cooling-off; one trial per user
+  identity GUID, no self-service reset). New trials also default to F4, not F64.
+  Viable alternatives identified: (a) stay on student tenant + **Azure DevOps** Git
+  integration (available) with a GitHub mirror for portfolio evidence; (b) own tenant +
+  **paid F2** funded by the Azure free $200/30-day credit (Microsoft-documented; pause
+  when idle; auto-disables at credit end so no charge risk; caveats: 30-day window,
+  Power BI Pro licensing on a fresh tenant unverified); (c) ask institution IT to
+  enable the GitHub provider (email drafted, sent by Gonzalo). Decision pending.
+
 ## Session log
 
 - 2026-07-10 — Repo prep before D1: added portfolio/learning/doc standing objectives to
   CLAUDE.md, wove 📣/🎓 checkpoints into all phase guides, added C–G guides. Phase A
   opened; A1–A5 are Gonzalo's next (Fabric portal). Nothing built in Fabric yet.
+- 2026-07-13 — A1–A3 worked through on the student tenant (workspaces on Large semantic
+  model format, template apps off — checkboxes to be ticked once confirmed); A5 blocked
+  at the GitHub provider (see Gotchas). Deep-dived tenant/trial options; three candidate
+  paths documented, IT email drafted. Phase paused at A5 pending path decision.
