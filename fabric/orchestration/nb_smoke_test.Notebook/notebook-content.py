@@ -24,7 +24,8 @@
 
 # Welcome to your new notebook
 # Type here in the cell editor to add code!
-spark.sql("SELECT 1 AS smoke").show()
+# Round-trip check: edited in the repo, pulled back into Fabric via Update all (A9).
+spark.sql("SELECT 2 AS smoke").show()
 
 # METADATA ********************
 
