@@ -1,7 +1,8 @@
 # Phase A — Platform & Git
 
-**Status:** 🔄 in progress (at step A1)
-**Days:** D1 (≈ 2026-07-11) · **Plan:** [P1 §Phase A](../fabric-p1-energy-lakehouse.md)
+**Status:** 🔄 in progress (at step A4, Track A)
+**Days:** D1 (≈ 2026-07-11) · **Plan:** [P1 §Phase A](../fabric-p1-energy-lakehouse.md) ·
+**Tracks:** [tracks.md](tracks.md) (A = Azure DevOps, active · B = GitHub, planned)
 
 ## Outcome (done criteria)
 
@@ -18,7 +19,8 @@
 | Workspace folders | `bronze`, `silver`, `gold`, `orchestration` hold **notebooks/pipelines** per layer; `lh_energy` sits at workspace root | The lakehouse spans layers, so it belongs to none |
 | Git sync folder | `/fabric` in this repo | Keeps Fabric item definitions out of the repo root, away from `docs/` and `src/` |
 | Prod workspace | `ws-energy-prod` stays **empty and unbound** until Phase F | It is populated exclusively by `fabric-cicd` from `main`; never hand-edit it |
-| GitHub auth for Fabric | Fine-grained PAT scoped to this single repo | Least privilege; trial ends ~2026-07-31 so expiry can be short |
+| Git provider | **Track A: Azure DevOps** (GitHub provider blocked on the student tenant) with GitHub kept canonical via mirroring · **Track B: GitHub** fine-grained PAT scoped to this repo | See `tracks.md`; two-track decision 2026-07-13 |
+| Semantic model storage format | **Large** (workspace Advanced setting) | Direct Lake (Phase E) requires the large format; no downside at our scale — model lives as TMDL in Git, not .pbix |
 
 ## Steps
 
@@ -45,11 +47,29 @@
 - [ ] Verify: open the lakehouse — the Tables tree shows a `dbo` schema node (schema
       mode active) and there is a Files section.
 
-### A4 `[YOU]` GitHub fine-grained PAT for Fabric
+### A4 `[YOU]` Git provider setup
+
+**`[Track A — Azure DevOps]`** *(active)*
+
+- [ ] Go to `https://dev.azure.com` and sign in with the **student account** (same
+      identity you use in Fabric — the DevOps org must live in the same tenant for
+      user-auth Git integration).
+- [ ] Create the organization when prompted (**New organization / Get started**):
+      name e.g. `gonzalonao-fabric` (globally unique), region **West Europe**.
+      🚩 If org creation errors with an admin-restriction message, the tenant blocks
+      DevOps orgs too — stop and log it (accelerates Track B instead).
+- [ ] Create project `fabric-energy-lakehouse` — visibility **Private**, version
+      control **Git**.
+- [ ] **Repos → Import repository** → Clone URL
+      `https://github.com/gonzalonao/fabric-energy-lakehouse.git` (public, no auth) →
+      Import. Verify branches `develop` and `main` arrived with full history.
+- [ ] **Repos → Branches** → set **`develop` as the default branch** (⋯ menu).
+
+**`[Track B — GitHub]`** *(own tenant)*
 
 - [ ] GitHub → **Settings → Developer settings → Fine-grained tokens → Generate new
       token**.
-- [ ] Name `fabric-git-integration`; expiration **2026-08-15** (past trial end).
+- [ ] Name `fabric-git-integration`; expiration past the capacity window.
 - [ ] Repository access: **Only select repositories** → `gonzalonao/fabric-energy-lakehouse`.
 - [ ] Permissions → Repository permissions → **Contents: Read and write**
       (Metadata: Read is added automatically).
@@ -59,9 +79,12 @@
 ### A5 `[YOU]` Bind `ws-energy-dev` ↔ `develop`
 
 - [ ] `ws-energy-dev` → **Workspace settings** → **Git integration**.
-- [ ] Provider: **GitHub** → **Add account** → paste the PAT from A4 → connect.
-- [ ] Repository: `gonzalonao/fabric-energy-lakehouse` · Branch: **`develop`** ·
-      Git folder: **`/fabric`**.
+- [ ] **`[Track A]`** Provider: **Azure DevOps** → account is detected from your signed-in
+      identity → pick Organization `gonzalonao-fabric` · Project
+      `fabric-energy-lakehouse` · Repository `fabric-energy-lakehouse`.
+      **`[Track B]`** Provider: **GitHub** → **Add account** → paste the PAT from A4 →
+      connect → Repository `gonzalonao/fabric-energy-lakehouse`.
+- [ ] Branch: **`develop`** · Git folder: **`/fabric`** (both tracks).
 - [ ] **Connect and sync.** The repo has no `/fabric` folder yet, so Fabric will offer
       to commit the workspace content into the branch — accept (direction:
       workspace → Git).
@@ -70,8 +93,12 @@
 
 ### A6 `[CLAUDE]` Verify the sync landed in the repo
 
-- [ ] `git pull` on `develop`; confirm `fabric/lh_energy.Lakehouse/` exists (a
-      `.platform` metadata file — item definitions only, never data).
+- [ ] **`[Track A]`** Add the DevOps remote locally (`git remote add devops <url>`;
+      auth via Git Credential Manager browser login on first fetch), pull
+      `devops/develop`, **push to `origin`** — the GitHub mirror now carries the Fabric
+      commit. **`[Track B]`** plain `git pull` on `develop`.
+- [ ] Confirm `fabric/lh_energy.Lakehouse/` exists (a `.platform` metadata file — item
+      definitions only, never data).
 - [ ] Confirm `.gitignore` does not swallow anything under `fabric/`.
 - [ ] Note in the session log what Fabric actually committed (item list).
 
@@ -92,9 +119,12 @@
       `fabric/nb_smoke_test.Notebook/notebook-content.py` is readable Python with cell
       markers (`# CELL ********************`).
 - [ ] Create branch `feature/git-roundtrip-check`; edit the notebook `.py` (add a
-      comment line and change `SELECT 1` to `SELECT 2`); push; open a PR into `develop`.
+      comment line and change `SELECT 1` to `SELECT 2`); push; open a PR into `develop`
+      **on GitHub** (both tracks — GitHub is canonical for review).
 - [ ] Verify the PR diff renders as a clean line-level Python diff (screenshot-worthy —
       this is the "notebooks are reviewable" portfolio claim). Merge the PR.
+- [ ] **`[Track A]`** After the merge, push `develop` to the `devops` remote so Fabric
+      can see it (mirror rule: GitHub → DevOps before any *Update all*).
 
 ### A9 `[YOU]` Pull the change back into Fabric
 
@@ -163,3 +193,8 @@ what you see, note here what it actually looked like)*
   model format, template apps off — checkboxes to be ticked once confirmed); A5 blocked
   at the GitHub provider (see Gotchas). Deep-dived tenant/trial options; three candidate
   paths documented, IT email drafted. Phase paused at A5 pending path decision.
+- 2026-07-13 (later) — **Decision: two-track execution** (see `tracks.md` + CLAUDE.md
+  mirror rule): Track A = Azure DevOps on the student tenant now, Track B = GitHub on an
+  own tenant + credit-funded F2 later. Phase A steps A4–A6/A8 rewritten as track
+  variants; resuming at A4 `[Track A]` (create the DevOps org). IT email to enable
+  GitHub still worth sending — if granted, Track A can swap provider cheaply.

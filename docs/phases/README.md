@@ -6,6 +6,12 @@ files prefixed `p2-`). Each file is the **single source of truth for that phase*
 exact steps to follow, who does each one, what has been done, and what went wrong. A
 fresh Claude session should be able to resume work from these files alone.
 
+The project runs **two execution tracks** (A = Azure DevOps on the student tenant,
+B = GitHub on an own tenant) over the same phases — see [tracks.md](tracks.md) for
+definitions, the git mirroring layout, and the **mirror rule**: divergent steps appear
+as `[Track A]`/`[Track B]` variant blocks inside the same phase file, and an edit to one
+variant must keep its sibling consistent in the same commit.
+
 ## Conventions
 
 - **`[YOU]`** — manual steps Gonzalo performs (Fabric portal, GitHub UI, screenshots).

@@ -18,6 +18,22 @@ button names, values to type, and how to verify the result, in the style of the
 `[YOU]` steps in `docs/phases/`. This applies to ad-hoc guidance too, not just the
 phase guides.
 
+## Two-track execution — Git integration
+
+The project runs the same P1 phases **twice** to demonstrate both Fabric Git providers
+(definitions, remote layout and status: `docs/phases/tracks.md`):
+
+- **Track A — Azure DevOps (active):** student tenant (GitHub provider blocked there);
+  Fabric syncs with an Azure DevOps repo; **this GitHub repo stays canonical** via
+  mirroring (`origin` = GitHub, `devops` = Azure DevOps).
+- **Track B — GitHub (planned):** own tenant + credit-funded F2 capacity; native GitHub
+  Git integration and SPN CI/CD.
+
+**Mirror rule (vital):** phase guides serve both tracks — track-agnostic steps written
+once, divergent steps as `[Track A]`/`[Track B]` variant blocks side by side. Any edit
+touching one track's variant must review/update the sibling variant **in the same
+commit**; the two tracks must always describe the same phases and end product.
+
 ## Branching — develop-flow
 
 - `feature/*` branches off `develop`; PRs merge into `develop`.
