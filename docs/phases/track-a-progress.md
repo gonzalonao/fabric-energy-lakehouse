@@ -7,18 +7,25 @@ guides (`phase-*.md`); steps marked `[Track B]` there don't apply here. Sibling 
 **Tenant/capacity:** ESESA/UCAM student tenant · Fabric trial capacity ·
 window ends ~2026-07-31.
 **Git:** Fabric ↔ Azure DevOps repo (`develop`, `/fabric`); GitHub canonical via mirror.
-**Status:** 🔄 Phase A at A4 (create the DevOps org).
+**Status:** 🔄 Phase A at A7 (smoke-test notebook). A1–A6 done — Fabric↔DevOps bound,
+first commit mirrored to GitHub.
+**DevOps:** org `glopezc443` · project/repo `fabric-energy-lakehouse` · remote `devops`
+(`https://dev.azure.com/glopezc443/fabric-energy-lakehouse/_git/fabric-energy-lakehouse`).
+**Dev workspace GUID:** `476b58fd-19e3-4c0d-bde7-c3f16d2a6fcf`.
 
 ## Phase A — Platform & Git · [guide](phase-a-platform-git.md) · 🔄
 
-- [ ] A1 — two workspaces on trial capacity *(reported done 2026-07-13 — Large semantic
-      model format, template apps off; tick after confirmation)*
-- [ ] A2 — folders `bronze/silver/gold/orchestration` *(reported done — confirm)*
-- [ ] A3 — lakehouse `lh_energy`, **schemas enabled** *(reported done — confirm the
-      schemas checkbox was ticked)*
-- [ ] A4 — `[Track A]` DevOps org + project + repo import
-- [ ] A5 — bind `ws-energy-dev` ↔ `develop` (`/fabric`)
-- [ ] A6 — verify sync landed; add `devops` remote; mirror to GitHub
+- [x] A1 — two workspaces on trial capacity *(confirmed 2026-07-13 — Large semantic
+      model format, template apps off)*
+- [x] A2 — folders `bronze/silver/gold/orchestration` *(confirmed 2026-07-13)*
+- [x] A3 — lakehouse `lh_energy`, **schemas enabled** *(confirmed 2026-07-13 — schemas
+      checkbox ticked; irreversible setting verified)*
+- [x] A4 — `[Track A]` DevOps org + project + repo import *(org `glopezc443`,
+      project/repo `fabric-energy-lakehouse`, `develop` default; imported from GitHub)*
+- [x] A5 — bind `ws-energy-dev` ↔ `develop` (`/fabric`) *(connected; first sync
+      committed `lh_energy` to DevOps)*
+- [x] A6 — verify sync landed; add `devops` remote; mirror to GitHub *(Fabric commit
+      `ca6ccdd` mirrored to `origin`; origin/devops in sync)*
 - [ ] A7 — smoke-test notebook committed from Fabric
 - [ ] A8 — `.py` round-trip PR on GitHub; push merge to `devops`
 - [ ] A9 — Update all in Fabric; edit visible
@@ -149,3 +156,13 @@ Done criteria:
 - 2026-07-13 (later) — Two-track decision (see `tracks.md`); phase-a steps rewritten as
   track variants. Progress bookkeeping moved to per-track tracker files. Next: A4
   `[Track A]` — create the Azure DevOps org.
+- 2026-07-13 (resume) — A1–A3 confirmed done (lakehouse schemas verified ticked). IT
+  email still not sent (Track A proceeds on Azure DevOps regardless). Starting A4.
+- 2026-07-13 (resume, cont.) — A4–A6 done. DevOps org `glopezc443` created, project
+  `fabric-energy-lakehouse` imported from GitHub (`develop` default). `ws-energy-dev`
+  bound to DevOps `develop` at `/fabric`; first Fabric sync committed the `lh_energy`
+  lakehouse. Added `devops` remote, fast-forwarded local/`origin` develop to Fabric's
+  commit `ca6ccdd`, verified origin ⇄ devops in sync (0 0). Fabric committed:
+  `fabric/Readme.md` + `fabric/lh_energy.Lakehouse/` (`.platform`, `alm.settings.json`,
+  `lakehouse.metadata.json` = `{"defaultSchema":"dbo"}` confirming schema mode,
+  `shortcuts.metadata.json`) — definitions only, no data. Next: A7 (smoke-test notebook).
