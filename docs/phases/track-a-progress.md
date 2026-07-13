@@ -7,8 +7,8 @@ guides (`phase-*.md`); steps marked `[Track B]` there don't apply here. Sibling 
 **Tenant/capacity:** ESESA/UCAM student tenant · Fabric trial capacity ·
 window ends ~2026-07-31.
 **Git:** Fabric ↔ Azure DevOps repo (`develop`, `/fabric`); GitHub canonical via mirror.
-**Status:** 🔄 Phase A at A7 (smoke-test notebook). A1–A6 done — Fabric↔DevOps bound,
-first commit mirrored to GitHub.
+**Status:** 🔄 Phase A at A9 (pull the round-trip edit back into Fabric). A1–A8 done —
+Fabric↔DevOps bound, notebook round-trips as reviewable `.py`, PR #1 merged & mirrored.
 **DevOps:** org `glopezc443` · project/repo `fabric-energy-lakehouse` · remote `devops`
 (`https://dev.azure.com/glopezc443/fabric-energy-lakehouse/_git/fabric-energy-lakehouse`).
 **Dev workspace GUID:** `476b58fd-19e3-4c0d-bde7-c3f16d2a6fcf`.
@@ -26,8 +26,10 @@ first commit mirrored to GitHub.
       committed `lh_energy` to DevOps)*
 - [x] A6 — verify sync landed; add `devops` remote; mirror to GitHub *(Fabric commit
       `ca6ccdd` mirrored to `origin`; origin/devops in sync)*
-- [ ] A7 — smoke-test notebook committed from Fabric
-- [ ] A8 — `.py` round-trip PR on GitHub; push merge to `devops`
+- [x] A7 — smoke-test notebook committed from Fabric *(commit `826232f`; runs
+      `smoke=1`; landed at `fabric/orchestration/nb_smoke_test.Notebook/`)*
+- [x] A8 — `.py` round-trip PR on GitHub; push merge to `devops` *(PR #1, clean 1-line
+      diff `SELECT 1`→`SELECT 2` + comment; squash-merged `92cf0e3`; mirrored to devops)*
 - [ ] A9 — Update all in Fabric; edit visible
 - [ ] A10 — evidence captured + committed
 - [ ] A11 — 🎓 Git-integration understanding check
@@ -166,3 +168,11 @@ Done criteria:
   `fabric/Readme.md` + `fabric/lh_energy.Lakehouse/` (`.platform`, `alm.settings.json`,
   `lakehouse.metadata.json` = `{"defaultSchema":"dbo"}` confirming schema mode,
   `shortcuts.metadata.json`) — definitions only, no data. Next: A7 (smoke-test notebook).
+- 2026-07-13 (resume, cont.) — A7–A8 done. Fabric committed `nb_smoke_test` (`826232f`)
+  under `fabric/orchestration/`; `notebook-content.py` is clean reviewable Python with
+  `# CELL` markers and default-lakehouse metadata. Mirrored to GitHub, branched
+  `feature/git-roundtrip-check`, edited the cell (`SELECT 1`→`SELECT 2` + comment),
+  opened [PR #1](https://github.com/gonzalonao/fabric-energy-lakehouse/pull/1) (clean
+  1-line diff — portfolio evidence), squash-merged (`92cf0e3`), pruned the branch, and
+  mirrored `develop` to `devops`. All three (local/origin/devops) at `92cf0e3`. Next: A9
+  — `[YOU]` Update all in Fabric to pull the edit back.
