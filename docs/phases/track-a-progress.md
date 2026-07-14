@@ -7,8 +7,8 @@ guides (`phase-*.md`); steps marked `[Track B]` there don't apply here. Sibling 
 **Tenant/capacity:** ESESA/UCAM student tenant · Fabric trial capacity ·
 window ends ~2026-07-31.
 **Git:** Fabric ↔ Azure DevOps repo (`develop`, `/fabric`); GitHub canonical via mirror.
-**Status:** 🔄 Phase A at A9 (pull the round-trip edit back into Fabric). A1–A8 done —
-Fabric↔DevOps bound, notebook round-trips as reviewable `.py`, PR #1 merged & mirrored.
+**Status:** 🔄 Phase A at A11 (🎓 understanding check, then A12 📣 portfolio seed).
+A1–A10 done — all three Phase A done-criteria met; evidence pack captured.
 **DevOps:** org `glopezc443` · project/repo `fabric-energy-lakehouse` · remote `devops`
 (`https://dev.azure.com/glopezc443/fabric-energy-lakehouse/_git/fabric-energy-lakehouse`).
 **Dev workspace GUID:** `476b58fd-19e3-4c0d-bde7-c3f16d2a6fcf`.
@@ -30,15 +30,20 @@ Fabric↔DevOps bound, notebook round-trips as reviewable `.py`, PR #1 merged & 
       `smoke=1`; landed at `fabric/orchestration/nb_smoke_test.Notebook/`)*
 - [x] A8 — `.py` round-trip PR on GitHub; push merge to `devops` *(PR #1, clean 1-line
       diff `SELECT 1`→`SELECT 2` + comment; squash-merged `92cf0e3`; mirrored to devops)*
-- [ ] A9 — Update all in Fabric; edit visible
-- [ ] A10 — evidence captured + committed
+- [x] A9 — Update all in Fabric; edit visible *(2026-07-13 — Update all pulled PR #1;
+      notebook shows `SELECT 2` + comment)*
+- [x] A10 — evidence captured + committed *(6 screenshots in
+      [`docs/evidence/phase-a/`](../evidence/phase-a/); Entra email redacted from `a5` —
+      public repo. A7 mid-commit panel not captured; commit `826232f` evidences it)*
 - [ ] A11 — 🎓 Git-integration understanding check
 - [ ] A12 — 📣 portfolio entry seeded
 
 Done criteria:
-- [ ] Commit made from Fabric visible on `develop`
-- [ ] Workspace folder structure in place
-- [ ] Notebook round-trips as `.py` with readable PR diff
+- [x] Commit made from Fabric visible on `develop` *(`ca6ccdd` lakehouse, `826232f`
+      notebook — mirrored to GitHub)*
+- [x] Workspace folder structure in place *(`a2-folders-lakehouse.png`)*
+- [x] Notebook round-trips as `.py` with readable PR diff *(PR #1 — `a8-pr-diff.png`;
+      pulled back into Fabric — `a9-notebook-select2.png`)*
 
 ## Phase B — Batch ingestion · [guide](phase-b-batch-ingestion.md) · ⬜
 
@@ -176,3 +181,11 @@ Done criteria:
   1-line diff — portfolio evidence), squash-merged (`92cf0e3`), pruned the branch, and
   mirrored `develop` to `devops`. All three (local/origin/devops) at `92cf0e3`. Next: A9
   — `[YOU]` Update all in Fabric to pull the edit back.
+- 2026-07-14 — A9–A10 done. *Update all* pulled PR #1 into the workspace; `nb_smoke_test`
+  shows `SELECT 2` + the round-trip comment → **bidirectional Git integration proven**.
+  Evidence pack captured (6 screenshots, `docs/evidence/phase-a/`). Deviation: the A7
+  mid-commit Source control panel wasn't captured (state already committed) — the commit
+  is evidenced by `826232f` and the Synced status in `a2`. The Entra account email was
+  **redacted** from `a5-git-integration.png` before committing (public repo, no
+  evidential value). **All three Phase A done-criteria met.** Next: A11 (🎓 quiz), A12
+  (📣 portfolio seed).
