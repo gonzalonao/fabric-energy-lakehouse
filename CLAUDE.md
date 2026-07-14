@@ -80,6 +80,12 @@ afterthoughts, and act on the checkpoints seeded in the phase guides.
    pipeline/concept diagrams (`show_widget` / Mermaid), and pull authoritative sources
    with WebSearch. Don't just build it — make sure he can explain it cold; the P1 plan's
    interview drills are the bar.
+   **`docs/learning-log.md` is the durable record of this objective** (spans both tracks
+   and P2): after every 🎓 check, log the score, add any miss to the *Misconception
+   ledger* **with its correction**, and append the phase's questions to the *Drill bank*.
+   **Always re-test prior misses** — a gap is closed only when answered correctly, on
+   differently-worded question, *after* the correction. Run the full drill bank cold at
+   Phase G and again at the end of P2.
 
 **Keep adjacent artifacts current** (reminders live at phase ends): the workspace wiki
 (`../../wiki` — `fabric-lakehouse` and `azure-fabric` learning notes) and the master CV

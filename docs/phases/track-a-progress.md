@@ -154,20 +154,15 @@ Done criteria:
 - [ ] Wiki notes created/corrected
 - [ ] Drills done, gaps noted
 
-## Learning log (🎓 checks — feeds the Phase G interview drills)
+## Learning (🎓)
 
-| Date | Check | Score | Gaps to re-drill |
-|---|---|---|---|
-| 2026-07-13 | Phase A opener (pre-build) | 1/3 | ❌ thought Git sync was real-time · ❌ thought "Lakehouse schemas" enables Direct Lake |
-| 2026-07-14 | A11 — Git integration (post-build) | 3/4 | ✅ **both prior gaps closed** (sync is manual; schemas = namespaces + MLVs, not Direct Lake) · ❌ **new:** thought prod is populated by binding `ws-energy-prod` to `main` + *Update all* |
+Scores, misconceptions and the drill bank live in **[`docs/learning-log.md`](../learning-log.md)**
+(cross-phase, cross-track — it also serves Track B and P2). Track A so far:
 
-**Open gap — prod deployment direction (drill at Phase F/G).** Git integration is
-*authoring* (dev workspace ⇄ source control, manual, as **you**). `fabric-cicd` is
-*release* (source control → prod workspace, triggered by merge to `main`, as an **SPN**).
-Prod is **never** Git-bound: binding it would (1) copy dev's GUIDs/values verbatim with no
-`parameter.yml` substitution, (2) replace an automated gated deploy with a human clicking
-a button, (3) give prod a Source control panel someone could hand-edit and commit back
-from, and (4) deploy under an interactive user identity instead of a service principal.
+| Date | Check | Score |
+|---|---|---|
+| 2026-07-13 | Phase A opener (pre-build) | 1/3 |
+| 2026-07-14 | A11 — Git integration (post-build) | 3/4 — 2 gaps closed, 1 open (**M3**: prod deploy direction; re-test at Phase F) |
 
 ## Session log (Track A)
 
