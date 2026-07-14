@@ -7,8 +7,8 @@ guides (`phase-*.md`); steps marked `[Track B]` there don't apply here. Sibling 
 **Tenant/capacity:** ESESA/UCAM student tenant · Fabric trial capacity ·
 window ends ~2026-07-31.
 **Git:** Fabric ↔ Azure DevOps repo (`develop`, `/fabric`); GitHub canonical via mirror.
-**Status:** ✅ **Phase A complete** (2026-07-14) — all steps + all done-criteria met.
-Next: **Phase B — Batch ingestion** ([guide](phase-b-batch-ingestion.md), start at B1).
+**Status:** 🔄 **Phase B — Batch ingestion** ([guide](phase-b-batch-ingestion.md)), at B1.
+Phase A ✅ complete (2026-07-14).
 **DevOps:** org `glopezc443` · project/repo `fabric-energy-lakehouse` · remote `devops`
 (`https://dev.azure.com/glopezc443/fabric-energy-lakehouse/_git/fabric-energy-lakehouse`).
 **Dev workspace GUID:** `476b58fd-19e3-4c0d-bde7-c3f16d2a6fcf`.
@@ -37,7 +37,8 @@ Next: **Phase B — Batch ingestion** ([guide](phase-b-batch-ingestion.md), star
       public repo. A7 mid-commit panel not captured; commit `826232f` evidences it)*
 - [x] A11 — 🎓 Git-integration understanding check *(3/4 — see Learning log below)*
 - [x] A12 — 📣 portfolio entry seeded *(EN + ES drafts written, site build passes;
-      **uncommitted — awaiting Gonzalo's review**, see session log)*
+      held on branch `feat/fabric-energy-lakehouse-entry` in the portfolio repo — merge to
+      `main` at the Phase G 📣 checkpoint, see session log)*
 
 Done criteria:
 - [x] Commit made from Fabric visible on `develop` *(`ca6ccdd` lakehouse, `826232f`
@@ -209,4 +210,9 @@ Scores, misconceptions and the drill bank live in **[`docs/learning-log.md`](../
   tangle unrelated work; and A12's `[YOU]` step is Gonzalo's review call (publish as WIP now
   vs hold unlisted until Phase G). Seeded conservatively: `featured: false`, `order: 6`,
   `status: in-progress` — promote at the Phase G 📣 checkpoint.
-  **Next session: Phase B — Batch ingestion, step B1.**
+- 2026-07-14 (later) — **A12 resolved: hold until Phase G.** The `projects` collection has no
+  `draft` flag (only `writing` does), so anything on `main` renders. The drafts are therefore
+  committed on branch `feat/fabric-energy-lakehouse-entry` off `main` in the portfolio repo
+  (`07164fa`, pushed) and left unmerged — git-backed but off the live site, with no changes to
+  the site's rendering code. **Merge that branch at the Phase G 📣 checkpoint.** Portfolio repo
+  restored to `fix/site-url-vercel`. **Phase B started (B1).**
