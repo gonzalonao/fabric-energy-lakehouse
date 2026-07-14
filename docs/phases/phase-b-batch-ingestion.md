@@ -42,8 +42,8 @@ Smoke test (PowerShell):
 Bronze layout in `lh_energy` → Files:
 `raw/<indicator>/<yyyy>/<MM>/<indicator>_<yyyyMM>.json`
 
-Stretch (only if B finishes early): PVPC via `api.esios.ree.es` — token rules in
-`wiki/learning/esios-api-usage.md`; token lives in local `.env` / connection only.
+~~Stretch: PVPC via `api.esios.ree.es`.~~ **Dropped 2026-07-14** — `precios_mercados`
+already returns PVPC tokenless (see Gotchas). No ESIOS token is needed in P1.
 
 ## Steps
 
@@ -200,8 +200,31 @@ you pull it back.
 
 ## Gotchas & deviations
 
-*(append as encountered — expected suspects: apidatos range limits per `time_trunc`,
-Outlook activity licensing, Variable-library expression syntax in preview)*
+**2026-07-14 — API probed before building (all three endpoints, Jan 2024, anonymous).**
+All return `200` with a 1-calendar-month window and the documented `time_trunc`. Payload
+shape is JSON:API — the series live in `included[]`, each with
+`attributes.title` / `attributes.values[]` (`{value, percentage, datetime}`):
+
+| Indicator | `time_trunc` | Series returned | Points (Jan 2024) |
+|---|---|---|---|
+| `demanda_evolucion` | `day` | 1 — *Demanda* | 31 |
+| `generacion_estructura` | `day` | **16** | 496 |
+| `precios_mercados` | `hour` | **2** — *PVPC*, *Precio mercado spot* | 1488 |
+
+Two consequences:
+
+- **PVPC comes free.** `precios-mercados-tiempo-real` already carries PVPC next to the
+  spot price. The ESIOS stretch goal existed to fetch PVPC behind a token — **it is now
+  redundant**, and no ESIOS token is needed anywhere in P1. Silver will model price as a
+  long fact with a `price_type` dimension (`pvpc` / `spot`) rather than one price column.
+- **`generacion_estructura` contains an aggregate row.** The 16th series is
+  *Generación total* — a total sitting in the same array as the 15 real technologies.
+  **Summing the array naively double-counts.** Silver must drop it (and Phase C's DQ gate
+  should assert `sum(technologies) ≈ Generación total` — the aggregate becomes a free
+  cross-check rather than a bug).
+
+*(append further as encountered — remaining suspects: Outlook activity licensing on the
+student tenant, Variable-library expression syntax in preview)*
 
 ## Session log
 
