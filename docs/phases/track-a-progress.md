@@ -7,13 +7,13 @@ guides (`phase-*.md`); steps marked `[Track B]` there don't apply here. Sibling 
 **Tenant/capacity:** ESESA/UCAM student tenant · Fabric trial capacity ·
 window ends ~2026-07-31.
 **Git:** Fabric ↔ Azure DevOps repo (`develop`, `/fabric`); GitHub canonical via mirror.
-**Status:** 🔄 Phase A at A11 (🎓 understanding check, then A12 📣 portfolio seed).
-A1–A10 done — all three Phase A done-criteria met; evidence pack captured.
+**Status:** ✅ **Phase A complete** (2026-07-14) — all steps + all done-criteria met.
+Next: **Phase B — Batch ingestion** ([guide](phase-b-batch-ingestion.md), start at B1).
 **DevOps:** org `glopezc443` · project/repo `fabric-energy-lakehouse` · remote `devops`
 (`https://dev.azure.com/glopezc443/fabric-energy-lakehouse/_git/fabric-energy-lakehouse`).
 **Dev workspace GUID:** `476b58fd-19e3-4c0d-bde7-c3f16d2a6fcf`.
 
-## Phase A — Platform & Git · [guide](phase-a-platform-git.md) · 🔄
+## Phase A — Platform & Git · [guide](phase-a-platform-git.md) · ✅
 
 - [x] A1 — two workspaces on trial capacity *(confirmed 2026-07-13 — Large semantic
       model format, template apps off)*
@@ -35,8 +35,9 @@ A1–A10 done — all three Phase A done-criteria met; evidence pack captured.
 - [x] A10 — evidence captured + committed *(6 screenshots in
       [`docs/evidence/phase-a/`](../evidence/phase-a/); Entra email redacted from `a5` —
       public repo. A7 mid-commit panel not captured; commit `826232f` evidences it)*
-- [ ] A11 — 🎓 Git-integration understanding check
-- [ ] A12 — 📣 portfolio entry seeded
+- [x] A11 — 🎓 Git-integration understanding check *(3/4 — see Learning log below)*
+- [x] A12 — 📣 portfolio entry seeded *(EN + ES drafts written, site build passes;
+      **uncommitted — awaiting Gonzalo's review**, see session log)*
 
 Done criteria:
 - [x] Commit made from Fabric visible on `develop` *(`ca6ccdd` lakehouse, `826232f`
@@ -153,6 +154,21 @@ Done criteria:
 - [ ] Wiki notes created/corrected
 - [ ] Drills done, gaps noted
 
+## Learning log (🎓 checks — feeds the Phase G interview drills)
+
+| Date | Check | Score | Gaps to re-drill |
+|---|---|---|---|
+| 2026-07-13 | Phase A opener (pre-build) | 1/3 | ❌ thought Git sync was real-time · ❌ thought "Lakehouse schemas" enables Direct Lake |
+| 2026-07-14 | A11 — Git integration (post-build) | 3/4 | ✅ **both prior gaps closed** (sync is manual; schemas = namespaces + MLVs, not Direct Lake) · ❌ **new:** thought prod is populated by binding `ws-energy-prod` to `main` + *Update all* |
+
+**Open gap — prod deployment direction (drill at Phase F/G).** Git integration is
+*authoring* (dev workspace ⇄ source control, manual, as **you**). `fabric-cicd` is
+*release* (source control → prod workspace, triggered by merge to `main`, as an **SPN**).
+Prod is **never** Git-bound: binding it would (1) copy dev's GUIDs/values verbatim with no
+`parameter.yml` substitution, (2) replace an automated gated deploy with a human clicking
+a button, (3) give prod a Source control panel someone could hand-edit and commit back
+from, and (4) deploy under an interactive user identity instead of a service principal.
+
 ## Session log (Track A)
 
 - 2026-07-10 — Repo prep before D1: standing objectives in CLAUDE.md, 📣/🎓 checkpoints
@@ -189,3 +205,13 @@ Done criteria:
   **redacted** from `a5-git-integration.png` before committing (public repo, no
   evidential value). **All three Phase A done-criteria met.** Next: A11 (🎓 quiz), A12
   (📣 portfolio seed).
+- 2026-07-14 — A11–A12 done → **Phase A complete.** 🎓 quiz scored 3/4: both gaps from the
+  pre-build quiz are now closed; one new gap on prod-deploy direction (Learning log above).
+  📣 Portfolio entry drafted in EN + ES (`fabric-energy-lakehouse.mdx` in `projects/` and
+  `projectsEs/` at `../../portfolio/astro`); `npm run build` passes (27 pages, both routes
+  render). **Left uncommitted on purpose** — the portfolio repo is mid-work on an unrelated
+  branch (`fix/site-url-vercel`, 4 commits ahead of `main`), so committing there would
+  tangle unrelated work; and A12's `[YOU]` step is Gonzalo's review call (publish as WIP now
+  vs hold unlisted until Phase G). Seeded conservatively: `featured: false`, `order: 6`,
+  `status: in-progress` — promote at the Phase G 📣 checkpoint.
+  **Next session: Phase B — Batch ingestion, step B1.**
