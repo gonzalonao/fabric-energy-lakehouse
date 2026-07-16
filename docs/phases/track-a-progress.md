@@ -52,7 +52,9 @@ Done criteria:
 - [x] B1 — learn first (pipelines, Copy vs Web, variable libraries) *(MS Learn ToC had been
       reorganized — corrected page links recorded in the guide; API probed live)*
 - [x] B1.5 — 🎓 ingestion & watermark check *(4/6 — M4, M5 opened; see Learning log)*
-- [ ] B2 — variable library `vl_energy`
+- [x] B2 — variable library `vl_energy` *(Fabric commit `2c68ccc`; `v_alert_email` +
+      `v_backfill_start`, both String; mirrored to `origin`. Pending-commit panel captured —
+      the shot missed at A7)*
 - [ ] B3 — core pipeline `pl_ingest_ree` (+ unit idempotency proof)
 - [ ] B4 — watermark + chunking notebooks (hybrid flow)
 - [ ] B5 — backfill pipeline `pl_backfill_ree`
@@ -228,4 +230,15 @@ Scores, misconceptions and the drill bank live in **[`docs/learning-log.md`](../
   Also covered **Copy job vs Copy activity** (MS now recommends Copy job as the Bronze default;
   we use Copy activity because our unit of work is a URL, not a queryable table, and we need
   ForEach + Invoke-pipeline composition — added to the drill bank). 🎓 4/6 — two new gaps
-  (M4, M5) logged with corrections. **Next: B2 — variable library `vl_energy`.**
+  (M4, M5) logged with corrections.
+- 2026-07-14 — B2 done. `vl_energy` created at the workspace root (config is workspace-scoped,
+  not an `orchestration` item) with `v_alert_email` = `gonzalonao@gmail.com` and
+  `v_backfill_start` = `2023-01-01`, both **String** (no date type exists; the value is
+  concatenated into a URL as text anyway). Fabric commit `2c68ccc`, mirrored to `origin`.
+  Serialization confirmed before B3 references it — three files: `.platform` (carries the
+  item's `logicalId`, which is what `fabric-cicd` keys on in Phase F), `variables.json`
+  (the default values, in the clear — hence the PII decision in the guide's Gotchas), and
+  `settings.json` with `"valueSetsOrder": []` — **the empty slot Phase F fills**: alternative
+  value sets land as separate files, so the repo currently states truthfully that only one
+  environment exists. Pending-commit panel captured (`docs/evidence/phase-b/`), closing the
+  A7 evidence gap. **Next: B3 — core pipeline `pl_ingest_ree`.**
