@@ -22,6 +22,7 @@
 | Watermark update timing | Only **after** a successful copy, never before | A failed run leaves the watermark untouched → next run retries the same window |
 | API politeness | ForEach loops run **sequential** (no parallel hammering), month-sized requests | REE fair-use: no redundant requests (see `wiki/learning/esios-api-usage.md`); tokenless API but same spirit |
 | Env config | Variable library `vl_energy` for alert email + default backfill start | Small honest use now; Phase F extends it with dev/prod value sets |
+| Alert recipient | `v_alert_email` = `gonzalonao@gmail.com` (personal, not the student tenant address) | Variable-library value sets are **committed as code** to a public repo, so the value is a deliberate choice. This address is already in the repo's commit history (so no new exposure), survives the trial's expiry, and is the one Track B uses on the own tenant. See Gotchas 2026-07-14 |
 | Failure alert | Office 365 Outlook activity on-fail | Simplest wiring; if the trial account has no Exchange license, log it here and swap for a Teams activity |
 
 ## REE API reference (`apidatos.ree.es`, tokenless)
@@ -252,6 +253,25 @@ Two consequences:
   **Summing the array naively double-counts.** Silver must drop it (and Phase C's DQ gate
   should assert `sum(technologies) ≈ Generación total` — the aggregate becomes a free
   cross-check rather than a bug).
+
+**2026-07-14 — PII in a public repo: variable-library values are code.** A variable library
+serializes its **value sets into Git** (MS: variables "managed as code, integrated with Git"),
+so `v_alert_email` is published, not configuration-in-a-vault. Checked what's already exposed
+before choosing a value — **both addresses are already in this repo's commit history**:
+`GLOPEZC443@alumnos.imf.com` (Fabric commits **as the signed-in tenant user** — present since
+the first sync, `ca6ccdd`) and `gonzalonao@gmail.com` (local commits). So the A5 screenshot
+redaction closed a window that was already open via commit metadata.
+
+**Decided:** use `gonzalonao@gmail.com` (no new exposure, survives the trial, matches Track B)
+and **leave the history alone** — commit emails are ordinary public-repo metadata, not
+credentials, and rewriting history on a repo Fabric is Git-bound to (force-push × 2 remotes +
+workspace re-sync) risks the binding for negligible gain. **Track B note:** Fabric will commit
+as *that* tenant's identity; the tenant address is set by the identity, not by git config.
+
+**Real lesson for the write-up:** the privacy boundary in Fabric ALM isn't the variable
+library — it's the **connection**. Variables are published; secrets belong in a connection's
+credential store (or Key Vault), never in a value set. This is why the ESIOS token would never
+have gone in `vl_energy` even if we'd kept that stretch goal.
 
 *(append further as encountered — remaining suspects: Outlook activity licensing on the
 student tenant, Variable-library expression syntax in preview)*
