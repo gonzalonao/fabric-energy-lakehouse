@@ -8,11 +8,17 @@
           "workspaceId": "00000000-0000-0000-0000-000000000000",
           "parameters": {
             "p_from": {
-              "value": "",
+              "value": {
+                "value": "@pipeline().parameters.p_from",
+                "type": "Expression"
+              },
               "type": "string"
             },
             "p_to": {
-              "value": "",
+              "value": {
+                "value": "@pipeline().parameters.p_to",
+                "type": "Expression"
+              },
               "type": "string"
             }
           }
