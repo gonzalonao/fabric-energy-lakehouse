@@ -189,9 +189,12 @@ you pull it back.
 - **ForEach** over the three indicators (pipeline array variable or the same config
       via `nb_gen_backfill_chunks` pattern — keep it simple: array parameter with
       3 JSON objects, Sequential = ON). Inside, per indicator:
-  - **Lookup** `lkp_watermark` → connection: `lh_energy` **SQL analytics endpoint** →
-    query: `SELECT last_end FROM bronze.ctl_watermark WHERE indicator = '<name>'`
-    (dynamic via `@item()`).
+  - **Lookup** `lkp_watermark` → **Connection**: `lh_energy` (the SQL analytics endpoint is
+    **not** a separate catalog item — see Gotchas 2026-07-16) → **Root folder**: `Tables` →
+    **Use query**: **T-SQL Query (Preview)** ← *this is what routes through the SQL endpoint* →
+    query (dynamic): `SELECT last_end FROM bronze.ctl_watermark WHERE indicator = '<name>'`
+    via `@item().indicator_name` → **First row only**: ON. Use **Preview data** to validate
+    before wiring downstream expressions to it.
   - **Invoke pipeline** `pl_ingest_ree` with `p_start` = watermark value,
     `p_end` = yesterday 23:59:
     `@concat(formatDateTime(addDays(utcNow(), -1), 'yyyy-MM-dd'), 'T23:59')`.
@@ -415,6 +418,23 @@ credentials (the B2 boundary holds), but prod cannot inherit this connection: it
 own, authenticated as something that isn't a person. That makes **two** connection GUIDs for
 `parameter.yml` (`conn_ree_apidatos`, `conn_fabric_pipelines`) on top of the lakehouse GUIDs —
 and it means the backfill currently runs **as Gonzalo**, which is fine in dev and wrong in prod.
+
+**2026-07-16 — the SQL analytics endpoint is a *mode*, not a connection.** B6 said to pick the
+"`lh_energy` SQL analytics endpoint" from the Lookup's connection dropdown. **No such entry
+exists** — the OneLake catalog lists only `lh_energy` as a Lakehouse. The endpoint is reached by
+selecting the lakehouse and then choosing **Root folder = Tables** → **Use query = T-SQL Query
+(Preview)**. Documented caveat: T-SQL Query mode is *"supported only when you read the Lakehouse
+via the connection set up in Manage connections and gateways"*, so the inline catalog picker may
+not expose it; fallback is an explicit **SQL Server** connection to the endpoint's connection
+string (Lakehouse → ⚙ Settings → SQL analytics endpoint), at the cost of a third connection to
+parameterize.
+
+**Why Table mode is a dead end here** (worth knowing — it looks like the simpler option):
+`Table` mode reads `ctl_watermark` wholesale with no `WHERE`, returning all three rows, and
+pipeline expressions have **no array-filter function**. A Filter activity doesn't help either —
+its `@item()` shadows the enclosing ForEach's. The `WHERE` must therefore execute at the source,
+which means the SQL endpoint. Reinforces **M5**: the endpoint reads (filters, returns) and never
+writes; the watermark write still goes through Spark.
 
 *(append further as encountered)*
 
