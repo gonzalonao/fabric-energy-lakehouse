@@ -241,4 +241,21 @@ Scores, misconceptions and the drill bank live in **[`docs/learning-log.md`](../
   `settings.json` with `"valueSetsOrder": []` — **the empty slot Phase F fills**: alternative
   value sets land as separate files, so the repo currently states truthfully that only one
   environment exists. Pending-commit panel captured (`docs/evidence/phase-b/`), closing the
-  A7 evidence gap. **Next: B3 — core pipeline `pl_ingest_ree`.**
+  A7 evidence gap. Variable notes added and committed separately (`4bf75ed`).
+- 2026-07-16 — B3 built and proven (**commit pending**). `pl_ingest_ree` in `orchestration`:
+  5 String params (no defaults — a default would let a caller silently ingest the wrong
+  window), `cp_fetch_json` Copy activity, REST connection `conn_ree_apidatos` (anonymous,
+  base `https://apidatos.ree.es`), retry 3 × 60 s, `mail_failure` on the On-fail branch.
+  **Outlook activity worked on the student tenant** — the anticipated Exchange-licensing
+  blocker did not materialize, so no Teams fallback needed.
+  Three findings the guide didn't predict, all now in its Gotchas: (1) the **Mapping tab must
+  stay empty** or Copy reshapes the payload — left empty, and Bronze verified byte-faithful
+  (raw response 2946 B vs landed file 2 KB, JSON:API envelope intact); (2) Fabric pre-populates
+  a pagination rule **`RFC5988 = True`** which would concatenate `Link`-header pages into one
+  file — probed the API, REE sends no `Link` header, so it's inert and left at default;
+  (3) REE is behind an **Imperva WAF**, which makes `Sequential = ON` self-preservation rather
+  than mere politeness — watch B7's early iterations for 403s. Library-variable syntax recorded:
+  `@pipeline().libraryVariables.vl_energy_v_alert_email` (flattened, not nested).
+  Idempotency proven at the unit level: identical re-run → 1 file, same name, timestamp
+  2:39:22 → 2:42:54 (`docs/evidence/phase-b/`). **Next: commit `pl_ingest_ree` from Fabric,
+  then B4 — watermark + chunking notebooks.**

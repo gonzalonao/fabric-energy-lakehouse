@@ -121,10 +121,18 @@ Web activity (see it has no destination at all), add a String parameter and reso
     - Folder: `@concat('raw/', pipeline().parameters.p_indicator_name, '/', formatDateTime(pipeline().parameters.p_start, 'yyyy'), '/', formatDateTime(pipeline().parameters.p_start, 'MM'))`
     - File name: `@concat(pipeline().parameters.p_indicator_name, '_', formatDateTime(pipeline().parameters.p_start, 'yyyyMM'), '.json')`
   - General tab → **Retry 3**, retry interval 60 s.
+  - **Mapping tab — leave it EMPTY. Never click *Import schema*.** Empty mapping = default
+    schema mapping = the REST response is written **as-is**. Defining a mapping makes Copy
+    parse and re-serialize the payload, so Bronze would hold *Fabric's interpretation* of
+    REE's JSON instead of what REE sent — which defeats "raw and replayable".
+    (Verified 2026-07-14: `b3-bronze-json-raw.png`.)
 - Add **Office 365 Outlook** activity `mail_failure`, connected from `cp_fetch_json`
       with an **On fail** (red) dependency. To: `v_alert_email` (expression builder →
-      Library variables). Subject: include `@{pipeline().parameters.p_indicator_name}`
-      and `@{pipeline().RunId}`.
+      Library variables) — the UI emits
+      **`@pipeline().libraryVariables.vl_energy_v_alert_email`**, i.e. the reference is
+      flattened to `libraryVariables.<library>_<variable>`, not a nested path. Subject:
+      include `@{pipeline().parameters.p_indicator_name}` and `@{pipeline().RunId}` (the Run
+      ID is what makes the alert actionable — it's what you paste into Monitor).
 - Test run: canvas **Run** with `demanda/evolucion` · `demanda_evolucion` · `day` ·
       `2024-01-01T00:00` · `2024-01-31T23:59`. Verify the JSON lands at
       `raw/demanda_evolucion/2024/01/demanda_evolucion_202401.json` (lakehouse Files view).
@@ -273,8 +281,28 @@ library — it's the **connection**. Variables are published; secrets belong in 
 credential store (or Key Vault), never in a value set. This is why the ESIOS token would never
 have gone in `vl_energy` even if we'd kept that stretch goal.
 
+**2026-07-14 — REST source ships a non-empty pagination default.** B3 said "leave pagination
+rules empty"; they aren't empty by default. Fabric pre-populates **`RFC5988 = True`**, which
+makes Copy follow `Link: rel=next` headers and **concatenate every page into the single output
+file** — silently breaking the one-request-one-file contract Bronze depends on.
+
+Probed the API: **REE returns no `Link` header**, so the rule is inert and we left it at the
+default. Cross-check that the landing is byte-faithful: raw response = **2946 bytes**, landed
+file = **2 KB**. *If a future source does emit `Link` headers, set `supportRFC5988 = False`
+explicitly, or Bronze stops being raw without any error.*
+
+**2026-07-14 — REE sits behind an Imperva WAF** (`X-CDN: Imperva` in the response headers).
+This upgrades `Sequential = ON` from politeness to **self-preservation**: B7 fires ~130 requests
+at a WAF-fronted public endpoint, and parallel bursts are what bot protection exists to stop.
+Watch the first few B7 iterations for `403`s rather than assuming a green first run means the
+whole backfill is safe.
+
+**2026-07-14 — Variable-library reference syntax** (recorded because the docs don't spell it
+out): the expression builder emits `@pipeline().libraryVariables.vl_energy_v_alert_email` —
+library and variable names are **flattened with an underscore**, not a nested path.
+
 *(append further as encountered — remaining suspects: Outlook activity licensing on the
-student tenant, Variable-library expression syntax in preview)*
+student tenant)*
 
 ## Session log
 
