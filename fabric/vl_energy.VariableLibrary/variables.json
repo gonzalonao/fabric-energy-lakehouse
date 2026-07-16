@@ -3,13 +3,13 @@
   "variables": [
     {
       "name": "v_alert_email",
-      "note": "",
+      "note": "Recipient for pipeline on-fail alerts.",
       "type": "String",
       "value": "gonzalonao@gmail.com"
     },
     {
       "name": "v_backfill_start",
-      "note": "",
+      "note": "Default earliest date for pl_backfill_ree.",
       "type": "String",
       "value": "2023-01-01"
     }
