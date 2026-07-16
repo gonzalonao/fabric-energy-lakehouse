@@ -58,7 +58,10 @@ Done criteria:
 - [x] B3 — core pipeline `pl_ingest_ree` (+ unit idempotency proof) *(commit `021b0a4`;
       definition reviewed — no secrets, alert email is a library-variable reference; but two
       dev GUIDs baked in → Phase F `parameter.yml` requirement, see guide Gotchas)*
-- [ ] B4 — watermark + chunking notebooks (hybrid flow)
+- [x] B4 — watermark + chunking notebooks (hybrid flow) *(shells `6e496d2`; code via
+      [PR #2](https://github.com/gonzalonao/fabric-energy-lakehouse/pull/2) → `3fac95a`;
+      pulled via Update all; `bronze.ctl_watermark` bootstrapped — **`bronze` confirmed a real
+      schema node**, validating A3/M2)*
 - [ ] B5 — backfill pipeline `pl_backfill_ree`
 - [ ] B6 — daily pipeline `pl_ingest_daily`
 - [ ] B7 — backfill run 2023-01 → now
@@ -268,5 +271,24 @@ Scores, misconceptions and the drill bank live in **[`docs/learning-log.md`](../
   = dev's `lh_energy`, `connection` = dev's REST connection): deployed verbatim to prod they'd
   resolve *silently* to dev's objects. This is **M3 made concrete in the repo** — the Phase F
   re-test is now "open this file and find what breaks" rather than a multiple-choice question,
-  and `parameter.yml` has a documented, non-hypothetical job. **Next: B4 — watermark + chunking
-  notebooks (hybrid flow: Gonzalo creates the shells, Claude writes the code).**
+  and `parameter.yml` has a documented, non-hypothetical job.
+- 2026-07-16 — B4 done (hybrid flow exercised end to end). Shells created in Fabric (`6e496d2`),
+  code written in the repo on `feature/ingest-notebooks`, reviewed and squash-merged via
+  [PR #2](https://github.com/gonzalonao/fabric-energy-lakehouse/pull/2) (`3fac95a`), pushed to
+  `devops`, pulled into the workspace with *Update all*. **`bronze.ctl_watermark` created and
+  bootstrapped** (`demanda_evolucion` / `2022-12-31T23:59` — deliberately before the backfill
+  start so the first daily run has a floor). No errors. **`bronze` appeared as a genuine schema
+  node** alongside `dbo` — the first Delta table in this lakehouse, and therefore the first real
+  validation that A3's irreversible schemas checkbox does what M2 says (namespaces, and the
+  Phase C MLV prerequisite). `updated_at` stored in UTC.
+  Chunking logic verified locally before any of this: 129 chunks = 43 months × 3, contiguous,
+  leap-year/year-roll correct, inverted range rejected.
+  **Two findings from validating a generated chunk against the live API** (details in the guide's
+  Gotchas — both reshape Phase C): (1) `time_trunc=hour` is **not honoured** for the spot price,
+  which switched to **15-minute grain on 2025-01-01** — our backfill range straddles the cutover,
+  so `fact_price` needs `period_minutes` as data rather than an assumption; (2) **DST is
+  physically present** in the payloads (transition months carry both `+01:00` and `+02:00`;
+  counts run −1/+1 hourly and −4/+4 quarter-hourly), so Silver's UTC normalization is load-bearing
+  — local timestamp alone is not a unique business key, and "every day has 24 rows" would be
+  wrong twice a year.
+  **Next: B5 — backfill pipeline `pl_backfill_ree`.**
