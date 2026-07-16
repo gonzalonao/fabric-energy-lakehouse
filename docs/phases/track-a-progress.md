@@ -13,6 +13,37 @@ Phase A ✅ complete (2026-07-14).
 (`https://dev.azure.com/glopezc443/fabric-energy-lakehouse/_git/fabric-energy-lakehouse`).
 **Dev workspace GUID:** `476b58fd-19e3-4c0d-bde7-c3f16d2a6fcf`.
 
+## Item & connection IDs (dev) — Phase F `parameter.yml` input
+
+Collected as they appear (per the phase-B guide: gather them now, not archaeologically at F2).
+**Every value below is dev-specific and must be substituted for prod**, and all of them change
+again on Track B's tenant.
+
+| Item | ID as written in definitions | Referenced by |
+|---|---|---|
+| `lh_energy` (lakehouse) | `8bdb6c16-94fa-9379-43ad-836e6cabfc1b` | **pipelines** (`artifactId`) |
+| `lh_energy` — **reversed encoding** | `6cabfc1b-836e-43ad-9379-94fa8bdb6c16` | **notebooks** (`default_lakehouse`, `known_lakehouses[].id`) |
+| `pl_ingest_ree` | `4f47585b-30ce-947e-4fac-7d2ea13339dd` | `pl_backfill_ree` (`pipelineId`) |
+| `nb_gen_backfill_chunks` | `571188e6-34df-b411-40cd-66dbf619b3a1` | `pl_backfill_ree` (`notebookId`) |
+| `nb_update_watermark` | `e3aee25b-ed44-a622-491c-14d6c55fa8b3` | `pl_backfill_ree` ×3 (`notebookId`) |
+| `conn_ree_apidatos` (REST) | `3cc793f5-7a71-4133-8102-f88cadcd4458` | `pl_ingest_ree` (`externalReferences.connection`) |
+| `conn_fabric_pipelines` | `7409c7aa-34fa-4e2a-98a6-f983c750e3f3` | `pl_backfill_ree` → `inv_ingest` |
+
+**Three things this table is trying to stop:**
+
+1. **The lakehouse has two encodings.** Substituting only the pipeline form leaves every notebook
+   writing into **dev** while the pipelines correctly target prod — a half-migrated deploy that
+   doesn't error. See the guide's Gotchas 2026-07-16.
+2. **Connections don't deploy.** Both `conn_*` entries live in the **tenant**, not in Git; the
+   definitions carry only GUIDs. Prod needs its **own** connections created first, and
+   `conn_fabric_pipelines` currently holds *Gonzalo's user token* — correct in dev, wrong in
+   prod (needs SPN or workspace identity).
+3. **`workspaceId` is `00000000-…`** everywhere — a same-workspace placeholder, so workspace IDs
+   need **no** substitution. Only item and connection GUIDs do.
+
+*(Item IDs = the item's `logicalId` from its `.platform`. Verified for `lh_energy` and
+`nb_update_watermark`.)*
+
 ## Phase A — Platform & Git · [guide](phase-a-platform-git.md) · ✅
 
 - [x] A1 — two workspaces on trial capacity *(confirmed 2026-07-13 — Large semantic
@@ -62,7 +93,9 @@ Done criteria:
       [PR #2](https://github.com/gonzalonao/fabric-energy-lakehouse/pull/2) → `3fac95a`;
       pulled via Update all; `bronze.ctl_watermark` bootstrapped — **`bronze` confirmed a real
       schema node**, validating A3/M2)*
-- [ ] B5 — backfill pipeline `pl_backfill_ree`
+- [x] B5 — backfill pipeline `pl_backfill_ree` *(commit `d81de3d`; new **Invoke pipeline**
+      activity + `conn_fabric_pipelines` — see guide Gotchas. Review caught `nb_chunks`'s base
+      parameters serialized as empty literals → fix commit pending)*
 - [ ] B6 — daily pipeline `pl_ingest_daily`
 - [ ] B7 — backfill run 2023-01 → now
 - [ ] B8 — incremental + idempotent + kill-test proofs
@@ -291,4 +324,20 @@ Scores, misconceptions and the drill bank live in **[`docs/learning-log.md`](../
   counts run −1/+1 hourly and −4/+4 quarter-hourly), so Silver's UTC normalization is load-bearing
   — local timestamp alone is not a unique business key, and "every day has 24 rows" would be
   wrong twice a year.
-  **Next: B5 — backfill pipeline `pl_backfill_ree`.**
+- 2026-07-16 — B5 built and committed (`d81de3d`). Blocker + decision: the new **Invoke pipeline**
+  activity **requires a connection** (the guide assumed otherwise). Fabric ships two variants;
+  chose the new one over Legacy because B7 fires 129 child runs at a WAF-fronted API and Legacy
+  can only monitor the *parent* — created `conn_fabric_pipelines` with **Organizational account**
+  auth. (Workspace identity **was** offered in the dropdown, contrary to my prediction — but the
+  dropdown doesn't check prerequisites, and WI additionally needs a tenant setting plus a real
+  F-SKU capacity, which trial isn't. **Track B probe:** on the own tenant + F2, WI is the better
+  answer and removes the user-token dependency.)
+  Definition reviewed: `isSequential` ✅, `waitOnCompletion` ✅, `@json(...exitValue)` ✅, all five
+  `@item()` mappings ✅, three watermark activities all gated on `Succeeded` ✅ (M4 wired into the
+  graph — if the loop dies the watermark never moves). **Bug caught by the review:** `nb_chunks`'s
+  base parameters serialized as empty literals (`"value": ""`) instead of
+  `@pipeline().parameters.p_from`/`p_to` — B7 would have died at the first activity with
+  `ValueError: p_from must be a non-empty YYYY-MM-DD date`. That's the empty-defaults design
+  working (loud failure, not a silent wrong range), but it needs fixing before B7. Fix in flight.
+  All dev item/connection GUIDs collected into the table above rather than left for F2.
+  **Next: fix `nb_chunks` params, then B6 — daily pipeline `pl_ingest_daily`.**
