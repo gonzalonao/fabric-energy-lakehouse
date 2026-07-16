@@ -18,7 +18,8 @@
 |---|---|---|
 | Pipeline split | `pl_ingest_ree` (pure, parameterized single fetch) + `pl_backfill_ree` (ForEach over month-chunks) + `pl_ingest_daily` (watermark-driven wrapper, scheduled) | The core stays idempotent and testable; backfill and daily are thin callers — this is the answer to the "incremental watermark design" interview drill |
 | Idempotency mechanism | Deterministic file path per (indicator, month); Copy activity **overwrites** | Re-running any slice rewrites the same file — no dedup logic needed in Bronze |
-| Watermark store | Delta table `bronze.ctl_watermark` (`indicator, last_end, updated_at`) in `lh_energy`; **read** via Lookup on the SQL endpoint, **written** by notebook `nb_update_watermark` | SQL analytics endpoint is read-only, so writes must go through Spark |
+| Watermark store | Delta table `bronze.ctl_watermark` (`indicator, last_end, updated_at`) in `lh_energy`; **read and written by Spark notebooks** (`nb_gen_chunks` reads, `nb_update_watermark` writes) | **Revised 2026-07-16** — originally "read via Lookup on the SQL endpoint". T-SQL Query mode is unusable with the connection Fabric provides (see Gotchas), and the notebook approach turned out better on the merits. The endpoint's read-only nature is still the reason **writes** go through Spark; it gets demonstrated at **C7** |
+| Work-list generation | **One** notebook `nb_gen_chunks` with `p_mode` = `backfill` \| `daily` | Generating a work list is one responsibility; the mode only decides where each start date comes from (`p_from` vs each indicator's own `last_end`). Keeps `INDICATORS` and `month_windows` in exactly one place, and makes both pipelines the same shape |
 | Watermark update timing | Only **after** a successful copy, never before | A failed run leaves the watermark untouched → next run retries the same window |
 | API politeness | ForEach loops run **sequential** (no parallel hammering), month-sized requests | REE fair-use: no redundant requests (see `wiki/learning/esios-api-usage.md`); tokenless API but same spirit |
 | Env config | Variable library `vl_energy` for alert email + default backfill start | Small honest use now; Phase F extends it with dev/prod value sets |
@@ -185,20 +186,24 @@ you pull it back.
 
 ### B6 `[YOU]` Daily pipeline `pl_ingest_daily`
 
-- New data pipeline in `orchestration` → `pl_ingest_daily`, no required params.
-- **ForEach** over the three indicators (pipeline array variable or the same config
-      via `nb_gen_backfill_chunks` pattern — keep it simple: array parameter with
-      3 JSON objects, Sequential = ON). Inside, per indicator:
-  - **Lookup** `lkp_watermark` → **Connection**: `lh_energy` (the SQL analytics endpoint is
-    **not** a separate catalog item — see Gotchas 2026-07-16) → **Root folder**: `Tables` →
-    **Use query**: **T-SQL Query (Preview)** ← *this is what routes through the SQL endpoint* →
-    query (dynamic): `SELECT last_end FROM bronze.ctl_watermark WHERE indicator = '<name>'`
-    via `@item().indicator_name` → **First row only**: ON. Use **Preview data** to validate
-    before wiring downstream expressions to it.
-  - **Invoke pipeline** `pl_ingest_ree` with `p_start` = watermark value,
-    `p_end` = yesterday 23:59:
-    `@concat(formatDateTime(addDays(utcNow(), -1), 'yyyy-MM-dd'), 'T23:59')`.
-  - **Notebook** `nb_update_watermark` (On success) → sets watermark to that `p_end`.
+**Redesigned 2026-07-16** — the Lookup-on-SQL-endpoint design is abandoned (see Gotchas); the
+daily pipeline is now the **same shape as the backfill**, driven by `nb_gen_chunks` in `daily`
+mode. This also fixes a latent bug in the original design: it issued **one** request per
+indicator for `watermark → yesterday`, so any outage longer than a calendar month produced a
+window the API rejects — and since a failed run (correctly) never advances the watermark, the
+daily pipeline could **never catch up without manual intervention**. Chunking the daily window
+by month removes that trap.
+
+- New data pipeline in `orchestration` → `pl_ingest_daily`, **no parameters**.
+- **Notebook** `nb_chunks` → `nb_gen_chunks`, base parameter `p_mode` = `daily` (literal).
+      It reads each indicator's own `last_end` from `bronze.ctl_watermark`, so a lagging
+      indicator resumes from its own position rather than a shared one.
+- **ForEach** `fe_chunks` → Items `@json(activity('nb_chunks').output.result.exitValue)`,
+      **Sequential = ON**. Inside: **Invoke pipeline** → `pl_ingest_ree`, all five parameters
+      from `@item()` (identical to B5).
+- **Notebook** `nb_wm_update` (On success from `fe_chunks`) → `nb_update_watermark`.
+      Three parallel activities, one per indicator, `p_new_end` = yesterday 23:59:
+      `@concat(formatDateTime(addDays(utcNow(), -1), 'yyyy-MM-dd'), 'T23:59')`.
 - Commit (`feat(ingest): watermark-driven daily incremental pipeline`).
 
 ### B7 `[YOU]` Run the backfill
@@ -435,6 +440,39 @@ pipeline expressions have **no array-filter function**. A Filter activity doesn'
 its `@item()` shadows the enclosing ForEach's. The `WHERE` must therefore execute at the source,
 which means the SQL endpoint. Reinforces **M5**: the endpoint reads (filters, returns) and never
 writes; the watermark write still goes through Spark.
+
+**2026-07-16 — ⛔ T-SQL Query (Preview) is unusable with the Lakehouse connection Fabric gives
+you; the Lookup design was abandoned.** Selecting `lh_energy` → *Root folder: Tables* →
+*Use query: T-SQL Query (Preview)* returns:
+
+> *"Please update the connection to utilize the available authentication kind to enable query mode"*
+
+The connection's **Authentication method offers only OAuth 2.0** — which *is* Entra auth, so
+there is nothing to change. (The "Organizational" option visible in the dialog is under **Privacy
+level**, a Power Query data-privacy setting, unrelated to authentication.) The documented
+constraint — *"supported only when you read the Lakehouse via the connection set up in Manage
+connections and gateways"* — cannot be satisfied with the connection the OneLake catalog picker
+produces. Three attempts, then stopped.
+
+**Decision: Option B — the watermark is read by a Spark notebook** (`nb_gen_chunks` in `daily`
+mode) instead of a Lookup. Not a workaround; better on the merits:
+
+| | Lookup + SQL Server connection (Option A) | Notebook (chosen) |
+|---|---|---|
+| Phase F connections | **3** | **2** (unchanged) |
+| `INDICATORS` config | duplicated (notebook + pipeline JSON) | **one place, in Python** |
+| Pipeline shape | daily ≠ backfill | **identical** |
+| Spark session cost | already paid — `nb_update_watermark` is a notebook | already paid |
+| Logic testability | SQL inside a pipeline expression | **testable Python** |
+
+The Spark-cost objection — the main argument for the Lookup — was **wrong**: `pl_ingest_daily`
+already runs `nb_update_watermark`, so a Spark session start was always in the daily critical
+path.
+
+**What we give up:** the SQL endpoint no longer appears in the daily architecture, so the
+read/write asymmetry (**M5**) isn't visible there. It is still demonstrated at **C7** (gold
+SQL proofs), which was already planned — so the lesson moves rather than disappears. The
+endpoint's read-only nature remains the reason `nb_update_watermark` exists at all.
 
 *(append further as encountered)*
 
