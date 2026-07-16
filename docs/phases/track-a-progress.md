@@ -55,7 +55,9 @@ Done criteria:
 - [x] B2 — variable library `vl_energy` *(Fabric commit `2c68ccc`; `v_alert_email` +
       `v_backfill_start`, both String; mirrored to `origin`. Pending-commit panel captured —
       the shot missed at A7)*
-- [ ] B3 — core pipeline `pl_ingest_ree` (+ unit idempotency proof)
+- [x] B3 — core pipeline `pl_ingest_ree` (+ unit idempotency proof) *(commit `021b0a4`;
+      definition reviewed — no secrets, alert email is a library-variable reference; but two
+      dev GUIDs baked in → Phase F `parameter.yml` requirement, see guide Gotchas)*
 - [ ] B4 — watermark + chunking notebooks (hybrid flow)
 - [ ] B5 — backfill pipeline `pl_backfill_ree`
 - [ ] B6 — daily pipeline `pl_ingest_daily`
@@ -257,5 +259,14 @@ Scores, misconceptions and the drill bank live in **[`docs/learning-log.md`](../
   than mere politeness — watch B7's early iterations for 403s. Library-variable syntax recorded:
   `@pipeline().libraryVariables.vl_energy_v_alert_email` (flattened, not nested).
   Idempotency proven at the unit level: identical re-run → 1 file, same name, timestamp
-  2:39:22 → 2:42:54 (`docs/evidence/phase-b/`). **Next: commit `pl_ingest_ree` from Fabric,
-  then B4 — watermark + chunking notebooks.**
+  2:39:22 → 2:42:54 (`docs/evidence/phase-b/`).
+- 2026-07-16 — B3 committed (`021b0a4`) and mirrored; definition reviewed (satisfies part of
+  B10 for this pipeline). Clean: params all String/no defaults, expressions intact,
+  `"schema": []`/`{}` machine-confirming the Mapping tab stayed empty, retry 3 × 60 s,
+  `mail_failure` gated on `["Failed"]`, **no secrets and no hardcoded email** — the recipient
+  is a `libraryVariables` reference. **But two dev-tenant GUIDs are baked in** (`artifactId`
+  = dev's `lh_energy`, `connection` = dev's REST connection): deployed verbatim to prod they'd
+  resolve *silently* to dev's objects. This is **M3 made concrete in the repo** — the Phase F
+  re-test is now "open this file and find what breaks" rather than a multiple-choice question,
+  and `parameter.yml` has a documented, non-hypothetical job. **Next: B4 — watermark + chunking
+  notebooks (hybrid flow: Gonzalo creates the shells, Claude writes the code).**

@@ -301,8 +301,30 @@ whole backfill is safe.
 out): the expression builder emits `@pipeline().libraryVariables.vl_energy_v_alert_email` —
 library and variable names are **flattened with an underscore**, not a nested path.
 
-*(append further as encountered — remaining suspects: Outlook activity licensing on the
-student tenant)*
+**2026-07-16 — Outlook activity worked on the student tenant.** The anticipated Exchange
+licensing blocker (see Decisions) did not materialize; no Teams fallback needed. Track B
+inherits the simpler path.
+
+**2026-07-16 — B3's committed definition bakes in two dev GUIDs → a hard Phase F requirement.**
+Reviewing `pl_ingest_ree.DataPipeline/pipeline-content.json` after the commit:
+
+```json
+"artifactId": "8bdb6c16-94fa-9379-43ad-836e6cabfc1b",   // dev's lh_energy
+"connection": "3cc793f5-7a71-4133-8102-f88cadcd4458"     // dev's REST connection
+```
+
+Fabric writes these itself; there is no UI option to make them symbolic. Deployed verbatim to
+prod, the pipeline would write into the **dev** lakehouse via the **dev** connection **without
+erroring** — the GUIDs resolve, just to the wrong tenant's objects. **`parameter.yml` must
+substitute both** (`lh_energy` artifactId and the `conn_ree_apidatos` connection id), and both
+change again on Track B's tenant. Every pipeline added in B5/B6 inherits the same issue —
+collect the GUIDs as they appear rather than archaeologically at F2.
+
+Note the contrast: `v_alert_email` is *not* hardcoded (it's a `libraryVariables` reference).
+The variable library parameterizes values **we** chose to control; `parameter.yml` covers the
+GUIDs Fabric bakes in regardless.
+
+*(append further as encountered)*
 
 ## Session log
 

@@ -82,7 +82,28 @@ route is wrong:
 > **fabric-cicd** = source control → prod workspace → *release*.
 > Different direction, different mechanism, different identity. **Prod never talks to Git.**
 
-**Re-test at:** Phase F (before building the deploy) and Phase G.
+**Concrete evidence, now in the repo (2026-07-16).** Reason 1 above stopped being theoretical
+the moment B3 committed. `fabric/orchestration/pl_ingest_ree.DataPipeline/pipeline-content.json`
+contains two **dev-tenant GUIDs, hardcoded**:
+
+```json
+"artifactId": "8bdb6c16-94fa-9379-43ad-836e6cabfc1b",   // dev's lh_energy lakehouse
+"connection": "3cc793f5-7a71-4133-8102-f88cadcd4458"     // dev's REST connection
+```
+
+Git-bind `ws-energy-prod` to `main`, hit *Update all*, and prod's pipeline would write into the
+**dev** lakehouse through the **dev** connection. **It would not error** — the GUIDs resolve
+fine, they just resolve to the wrong tenant's objects. That silence is the whole danger: a
+misconfiguration that throws is a nuisance; one that succeeds against the wrong target is an
+incident. Substituting these two values is precisely what `parameter.yml` is for.
+
+*Contrast worth noticing:* `v_alert_email` is **not** hardcoded here — it's a
+`libraryVariables` reference. The variable library is already the parameterization seam for
+values we chose to control; `parameter.yml` covers the GUIDs Fabric bakes in whether we like
+it or not.
+
+**Re-test at:** Phase F (before building the deploy) and Phase G — **open this file and ask
+him to find what breaks.** Far better than re-asking the multiple-choice.
 
 ### M4 — "The watermark is what makes a re-run safe" ⬜ open (2026-07-14)
 
