@@ -24,7 +24,8 @@ again on Track B's tenant.
 | `lh_energy` (lakehouse) | `8bdb6c16-94fa-9379-43ad-836e6cabfc1b` | **pipelines** (`artifactId`) |
 | `lh_energy` — **reversed encoding** | `6cabfc1b-836e-43ad-9379-94fa8bdb6c16` | **notebooks** (`default_lakehouse`, `known_lakehouses[].id`) |
 | `pl_ingest_ree` | `4f47585b-30ce-947e-4fac-7d2ea13339dd` | `pl_backfill_ree` (`pipelineId`) |
-| `nb_gen_backfill_chunks` | `571188e6-34df-b411-40cd-66dbf619b3a1` | `pl_backfill_ree` (`notebookId`) |
+| `nb_gen_chunks` | `7ec6dc40-6091-aa9e-4141-ce923e668746` | `pl_backfill_ree`, `pl_ingest_daily` (`notebookId`) |
+| ~~`nb_gen_backfill_chunks`~~ | ~~`571188e6-34df-b411-40cd-66dbf619b3a1`~~ | **retired 2026-07-16** — superseded by `nb_gen_chunks` |
 | `nb_update_watermark` | `e3aee25b-ed44-a622-491c-14d6c55fa8b3` | `pl_backfill_ree` ×3 (`notebookId`) |
 | `conn_ree_apidatos` (REST) | `3cc793f5-7a71-4133-8102-f88cadcd4458` | `pl_ingest_ree` (`externalReferences.connection`) |
 | `conn_fabric_pipelines` | `7409c7aa-34fa-4e2a-98a6-f983c750e3f3` | `pl_backfill_ree` → `inv_ingest` |
