@@ -28,6 +28,7 @@ answer, not just recognize it.
 |---|---|---|---|---|
 | 2026-07-13 | Phase A opener (pre-build) | A / Phase A | 1/3 | 2 misconceptions logged (M1, M2) |
 | 2026-07-14 | A11 — Git integration (post-build) | A / Phase A | 3/4 | **M1 + M2 closed**; M3 opened |
+| 2026-07-14 | B1.5 — ingestion & watermarks (pre-build) | A / Phase B | 4/6 | M4 + M5 opened. Correct: Copy-vs-Web, watermark-after-success, ForEach sequential, the `Generación total` trap |
 
 ---
 
@@ -83,6 +84,53 @@ route is wrong:
 
 **Re-test at:** Phase F (before building the deploy) and Phase G.
 
+### M4 — "The watermark is what makes a re-run safe" ⬜ open (2026-07-14)
+
+**Believed:** re-running a slice is safe because the watermark stops `pl_ingest_ree` from
+re-fetching a window it already has.
+**Actually:** two independent mechanisms, two different problems — and they were conflated:
+
+| | Mechanism | Solves | If removed |
+|---|---|---|---|
+| **Incremental** | watermark (`bronze.ctl_watermark`) | *what* to fetch | slow, still correct |
+| **Idempotent** | deterministic path + Copy **overwrite** | what happens if you fetch it **twice** | fast, **corrupt** |
+
+**Two proofs they're separate:**
+1. **The kill-test (B8).** Cancel a backfill mid-flight, re-run the same params → identical
+   file set. The watermark was *never updated* (we only write it after success), so it
+   cannot be what protected the re-run. The deterministic path + overwrite did.
+2. **`pl_backfill_ree` never reads the watermark at all** — it fetches `p_from`→`p_to`
+   unconditionally. If the watermark were the idempotency mechanism, the backfill would
+   have none.
+
+**The model to hold:**
+> The **watermark decides what to fetch**. The **path decides what happens when you fetch
+> it twice.** Idempotency is a property of the *destination*, not of the *scheduler*.
+
+**Why it matters:** an idempotency guarantee that actually rests on a watermark is a guarantee
+that evaporates exactly when you need it — on the failed run, where the watermark didn't move.
+**Re-test at:** B8 (the kill-test is the live demonstration) and Phase G.
+
+### M5 — "A Lookup can write, and it commits automatically on success" ⬜ open (2026-07-14)
+
+**Believed:** the Lookup could write the watermark back, but its automatic commit-on-success
+would break our after-the-copy timing rule.
+**Actually:** wrong on both halves.
+1. **A Lookup never writes — ever.** It is a read activity by definition: it runs a query and
+   returns rows into the pipeline's run state. There is no write path to commit.
+2. **The real reason is architectural, not a timing or permissions detail.** The **SQL
+   analytics endpoint over a Lakehouse is read-only** — it's a T-SQL *query surface* projected
+   over the Delta files in OneLake. It can read them; it cannot modify them. Every write to a
+   Lakehouse Delta table goes through a writer engine (Spark) → hence `nb_update_watermark`.
+
+**The distinction to file:** Lakehouse SQL analytics endpoint = **read-only**. Fabric
+**Warehouse** = **read/write via T-SQL**. Same T-SQL surface, different write capability —
+this is one of the primary Lakehouse-vs-Warehouse decision criteria.
+
+**Why it matters:** this was the planted "…happens automatically" distractor (see *Observed
+pattern*) and it landed — the signature failure, in a new costume.
+**Re-test at:** Phase C (when the SQL endpoint is used for the gold proofs) and Phase G.
+
 ---
 
 ## Drill bank
@@ -105,7 +153,32 @@ Questions to run cold at Phase G / end of project. Grows one section per phase.
    DevOps? What keeps the two remotes from diverging?
 7. Why does Track B exist at all — what does building the same thing twice actually prove?
 
-*(Phase B–G sections appended at each 🎓 checkpoint.)*
+### Phase B — Batch ingestion
+
+1. Both a Copy and a Web activity can call the REE API anonymously. Why must ours be Copy?
+   (Answer must reach: Web's response stays in the pipeline's run state, size-limited and
+   never persisted; our payload must land as a file in Bronze.)
+2. **Copy job vs Copy activity** — Microsoft recommends Copy job as the *default* for Bronze
+   ingestion, and it has native watermark-based incremental copy, which Copy activity lacks.
+   So why did we use Copy activity anyway? (Reach: our unit of work is a *URL*, not a
+   queryable table — the date window is baked into the URL string, so there's nothing to
+   watermark against; plus we need ForEach + Invoke-pipeline composition. Bonus: what would
+   change if the source were a SQL database instead?)
+3. Why is the watermark written only after a successful copy? What *specifically* goes wrong
+   if written first? (Reach: **silent permanent gap** — the failed window is skipped forever
+   and no error surfaces.)
+4. Bronze has no dedup logic at all. What makes a re-run safe? (M4 — must separate
+   *incremental* from *idempotent*, and explain why the kill-test proves it's not the
+   watermark.)
+5. Why read the watermark via Lookup on the SQL endpoint but write it via a Spark notebook?
+   (M5 — the endpoint is **read-only**; Lookup never writes. How does a Warehouse differ?)
+6. Why is `Sequential = ON` on the backfill ForEach a decision rather than an oversight?
+7. `estructura-generacion` returns 16 identically-shaped series. What's the trap, why does no
+   structural check catch it, and how does the DQ gate turn it into an asset?
+8. Draw the three pipelines and their call graph from memory. Which one never reads the
+   watermark, and why is that not a bug?
+
+*(Phase C–G sections appended at each 🎓 checkpoint.)*
 
 ---
 
@@ -113,9 +186,17 @@ Questions to run cold at Phase G / end of project. Grows one section per phase.
 
 Gonzalo's misses cluster on a single axis: **assuming the platform automates something that
 Fabric actually requires an explicit, human or pipeline-driven step for** (M1: sync assumed
-real-time; M3: prod assumed to self-populate). His Delta/Spark/data-modeling instincts are
-solid; the gap is in Fabric's *operational seams* — where the magic stops and a deliberate
-action is required.
+real-time; M3: prod assumed to self-populate; **M5: a read-only Lookup assumed to write, and to
+commit on its own**). His Delta/Spark/data-modeling instincts are solid; the gap is in Fabric's
+*operational seams* — where the magic stops and a deliberate action is required.
 
 **So:** when quizzing on a new Fabric feature, always include a distractor of the form
-"…happens automatically." That is the misconception most likely to be live.
+"…happens automatically." That is the misconception most likely to be live. **It landed again
+at B1.5 (M5)** — the pattern is stable and worth planting every time.
+
+**A second, related axis emerged at B1.5 (M4): crediting the wrong mechanism.** He knows both
+mechanisms exist and what each does, but attributes the guarantee to the more *visible* one
+(the watermark) rather than the one actually providing it (path + overwrite). Distinct from the
+"automatic" axis — nothing is assumed automatic here; the causality is just wired to the wrong
+component. **So also ask "what breaks if you remove X?"** — the counterfactual is what
+separates a real mental model from a plausible story, and it's how M4 was exposed.

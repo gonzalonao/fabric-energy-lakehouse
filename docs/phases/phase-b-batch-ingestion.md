@@ -49,13 +49,43 @@ already returns PVPC tokenless (see Gotchas). No ESIOS token is needed in P1.
 
 ### B1 `[YOU]` Learn first (~1–2 h, timeboxed)
 
-- Pipeline anatomy — activities, parameters, dynamic content, triggers:
-      `https://learn.microsoft.com/fabric/data-factory/` (concepts + "data pipelines" section).
-- Copy activity vs Web activity — know the drill answer: **Copy** = connector-based
-      data movement that writes to a destination (files/tables); **Web** = control-flow
-      REST call whose (size-limited) response stays inside the pipeline. We use Copy
-      with a REST source because the payload must land in Files.
-- Variable libraries (preview): `https://learn.microsoft.com/fabric/cicd/variable-library/variable-library-overview`.
+Read in order (the Data Factory ToC was reorganized in 2026 — these are the current pages;
+the `/fabric/data-factory/` landing ToC does **not** list them):
+
+1. [Pipeline overview](https://learn.microsoft.com/fabric/data-factory/pipeline-overview)
+2. [Activity overview](https://learn.microsoft.com/fabric/data-factory/activity-overview) —
+   the three families: data movement / transformation / control flow.
+3. [Copy activity in pipelines](https://learn.microsoft.com/fabric/data-factory/copy-data-activity)
+4. [Web activity](https://learn.microsoft.com/fabric/data-factory/web-activity) — read it for
+   what it **lacks**: no destination.
+5. [Parameters](https://learn.microsoft.com/fabric/data-factory/parameters)
+6. [Expressions and functions](https://learn.microsoft.com/fabric/data-factory/expression-language)
+   — `@concat`, `@formatDateTime`, `@item()`, string interpolation `@{...}`. The page that
+   matters most for actually building B3.
+7. [ForEach activity](https://learn.microsoft.com/fabric/data-factory/foreach-activity) — note
+   the **Sequential** toggle.
+8. [Variable library overview](https://learn.microsoft.com/fabric/cicd/variable-library/variable-library-overview)
+
+Drill answers to hold:
+
+- **Copy vs Web** — **Copy** = connector-based data movement that writes to a destination
+      (files/tables); **Web** = control-flow REST call whose (size-limited) response stays
+      inside the pipeline's run state, unpersisted. We use Copy with a REST source because the
+      payload must land in Files.
+- **Copy job vs Copy activity** — [decision guide](https://learn.microsoft.com/fabric/data-factory/decision-guide-data-movement).
+      MS recommends **Copy job** as the default for Bronze/raw ingestion; it's a standalone item
+      with **native watermark-based incremental copy and CDC**, which Copy activity lacks (with
+      Copy activity *you* track last-run state — which is exactly what B4–B6 build).
+      **We use Copy activity anyway** because (a) our unit of work is a **URL**, not a queryable
+      table — the date window is baked into the URL string, so there is nothing for Copy job to
+      watermark against; (b) we need ForEach + Invoke-pipeline composition and On-fail branching;
+      (c) hand-building the watermark is an explicit interview drill. Be able to say that a SQL
+      source would likely have made Copy job the better call — chosen, not defaulted.
+
+Hands-on (the part that makes it stick): build a throwaway `pl_scratch` pipeline — drag a Copy
+activity (see the REST source + the *separate* folder and file-name destination boxes), drag a
+Web activity (see it has no destination at all), add a String parameter and resolve it via
+**Add dynamic content**, and pull out the red **On fail** handle. **Delete it; don't commit it.**
 
 ### B1.5 `[CLAUDE]` 🎓 Understanding check — ingestion & watermarks
 

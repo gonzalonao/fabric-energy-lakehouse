@@ -49,8 +49,9 @@ Done criteria:
 
 ## Phase B — Batch ingestion · [guide](phase-b-batch-ingestion.md) · ⬜
 
-- [ ] B1 — learn first (pipelines, Copy vs Web, variable libraries)
-- [ ] B1.5 — 🎓 ingestion & watermark check
+- [x] B1 — learn first (pipelines, Copy vs Web, variable libraries) *(MS Learn ToC had been
+      reorganized — corrected page links recorded in the guide; API probed live)*
+- [x] B1.5 — 🎓 ingestion & watermark check *(4/6 — M4, M5 opened; see Learning log)*
 - [ ] B2 — variable library `vl_energy`
 - [ ] B3 — core pipeline `pl_ingest_ree` (+ unit idempotency proof)
 - [ ] B4 — watermark + chunking notebooks (hybrid flow)
@@ -164,6 +165,7 @@ Scores, misconceptions and the drill bank live in **[`docs/learning-log.md`](../
 |---|---|---|
 | 2026-07-13 | Phase A opener (pre-build) | 1/3 |
 | 2026-07-14 | A11 — Git integration (post-build) | 3/4 — 2 gaps closed, 1 open (**M3**: prod deploy direction; re-test at Phase F) |
+| 2026-07-14 | B1.5 — ingestion & watermarks (pre-build) | 4/6 — 2 gaps open (**M4**: watermark ≠ idempotency, re-test at B8; **M5**: SQL endpoint is read-only, re-test at Phase C) |
 
 ## Session log (Track A)
 
@@ -216,3 +218,14 @@ Scores, misconceptions and the drill bank live in **[`docs/learning-log.md`](../
   (`07164fa`, pushed) and left unmerged — git-backed but off the live site, with no changes to
   the site's rendering code. **Merge that branch at the Phase G 📣 checkpoint.** Portfolio repo
   restored to `fix/site-url-vercel`. **Phase B started (B1).**
+- 2026-07-14 — B1–B1.5 done. Probed all three REE endpoints live before building: all answer
+  anonymously with a 1-month window (findings + the two consequences in the phase-b guide's
+  Gotchas). **ESIOS stretch dropped** — `precios-mercados-tiempo-real` already returns PVPC
+  tokenless, so no ESIOS token is needed anywhere in P1. Deviation: the MS Learn Data Factory
+  ToC has been reorganized and the concept pages I first pointed at didn't match it — corrected
+  reading list is in this session's notes (pipeline-overview, activity-overview,
+  copy-data-activity, web-activity, parameters, expression-language, foreach-activity).
+  Also covered **Copy job vs Copy activity** (MS now recommends Copy job as the Bronze default;
+  we use Copy activity because our unit of work is a URL, not a queryable table, and we need
+  ForEach + Invoke-pipeline composition — added to the drill bank). 🎓 4/6 — two new gaps
+  (M4, M5) logged with corrections. **Next: B2 — variable library `vl_energy`.**
