@@ -35,7 +35,7 @@ Keep every request ≤ 1 calendar month (hourly series reject long ranges).
 |---|---|---|---|
 | `demanda_evolucion` | `/es/datos/demanda/evolucion` | `day` | Daily demand (MW) |
 | `generacion_estructura` | `/es/datos/generacion/estructura-generacion` | `day` | Daily generation by technology |
-| `precios_mercados` | `/es/datos/mercados/precios-mercados-tiempo-real` | `hour` | Hourly market price (€/MWh) |
+| `precios_mercados` | `/es/datos/mercados/precios-mercados-tiempo-real` | `hour` | Market price (€/MWh) — **two series at two different grains**, see Gotchas 2026-07-16. *Not* uniformly hourly |
 
 Smoke test (PowerShell):
 `Invoke-RestMethod "https://apidatos.ree.es/es/datos/demanda/evolucion?start_date=2024-01-01T00:00&end_date=2024-01-31T23:59&time_trunc=day"`
@@ -323,6 +323,67 @@ collect the GUIDs as they appear rather than archaeologically at F2.
 Note the contrast: `v_alert_email` is *not* hardcoded (it's a `libraryVariables` reference).
 The variable library parameterizes values **we** chose to control; `parameter.yml` covers the
 GUIDs Fabric bakes in regardless.
+
+**2026-07-16 — ⚠️ Fabric writes the same lakehouse GUID in TWO different encodings.**
+`lh_energy`'s `logicalId` is `8bdb6c16-94fa-9379-43ad-836e6cabfc1b` (see its `.platform`).
+That exact string appears in the **pipeline** definition. The **notebook** metadata references
+the same lakehouse as `6cabfc1b-836e-43ad-9379-94fa8bdb6c16` — the *same GUID with its six
+segments in reverse order* (verified: identical character multiset, exact chunk reversal; the
+odds of coincidence are nil).
+
+| Item type | Field | Encoding of `lh_energy` |
+|---|---|---|
+| Data pipeline | `artifactId` | `8bdb6c16-94fa-9379-43ad-836e6cabfc1b` (= `logicalId`) |
+| Notebook | `default_lakehouse` / `known_lakehouses[].id` | `6cabfc1b-836e-43ad-9379-94fa8bdb6c16` (reversed) |
+
+**Phase F consequence — this is the dangerous one.** A `parameter.yml` find/replace on the dev
+lakehouse GUID written in the pipeline's form **matches every pipeline and silently misses every
+notebook**. The deploy would succeed, prod's pipelines would correctly target prod's lakehouse,
+and prod's notebooks would keep writing into **dev**. A half-migrated deployment is worse than a
+failed one — it produces plausible-looking output from the wrong place. **`parameter.yml` must
+cover both string forms**, and F2's ID collection must record both.
+
+**2026-07-16 — ⚠️ `time_trunc=hour` is NOT honoured for the spot price, and the grain changes
+mid-history.** Found by feeding a *generated* B4 chunk to the live API and checking the point
+count (15 days × 24 h × 2 series should be 720; it returned **1800**).
+
+`precios-mercados-tiempo-real` returns **two series at two different grains**, and one of them
+switched grain **on 2025-01-01** (Spain's move to 15-minute market time units):
+
+| Window | PVPC | Precio mercado spot |
+|---|---|---|
+| Jan 2024 | 744 pts · 60 min | 744 pts · **60 min** |
+| **2024-12** | 60 min | **60 min** ← last hourly month |
+| **2025-01** | 60 min | **15 min** ← cutover |
+| Sep 2025 | 720 pts · 60 min | 2880 pts · **15 min** |
+
+**Our backfill range (2023-01 → now) straddles the cutover**, so the price data is hourly for
+its first two years and quarter-hourly thereafter — in the same table, from the same endpoint,
+with the same `time_trunc=hour` request. The API parameter is advisory for this series.
+
+**Consequences for Phase C (the price model must be designed for this, not patched later):**
+- A `fact_price` at hourly grain is **wrong from 2025-01 onward** — it would silently average or
+  quadruple-count. Model price as a long fact: `price_type` (`pvpc` | `spot`), `period_start`
+  (UTC), **`period_minutes`** (60 | 15), `value`. The grain becomes data, not an assumption.
+- The **DQ gate** should assert the point count per window against the expected count *derived
+  from the observed grain*, and flag a grain change rather than absorb it.
+
+**2026-07-16 — DST is physically present in the data; UTC normalization is load-bearing.**
+Timestamps are **Europe/Madrid local with offset**, and the transition months prove it:
+
+| Month | Actual | Expected | Delta | Cause |
+|---|---|---|---|---|
+| 2024-03 | 743 | 744 (31×24) | **−1** | spring-forward: 02:00 never happens |
+| 2024-10 | 745 | 744 | **+1** | fall-back: 02:00 happens twice |
+| 2025-03 | 2972 | 2976 (31×96) | **−4** | spring-forward, quarter-hours |
+| 2025-10 | 2980 | 2976 | **+4** | fall-back |
+| 2025-05 | 2976 | 2976 | 0 | no transition |
+
+Transition months carry **both `+01:00` and `+02:00`** offsets; normal months carry one. So the
+Silver UTC rule is not box-ticking: without it, one hour each October **duplicates** (a real
+dedup-on-business-key hazard, since local timestamp alone is not unique) and one hour each March
+is **missing** (a gap that is correct and must not be flagged as an error). A DQ rule of "every
+day has 24 rows" would be wrong twice a year.
 
 *(append further as encountered)*
 
