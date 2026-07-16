@@ -173,7 +173,11 @@ you pull it back.
       `@json(activity('nb_chunks').output.result.exitValue)` → **Sequential = ON**
       (REE politeness — see Decisions).
   - Inside: **Invoke pipeline** → `pl_ingest_ree`, mapping all five parameters from
-    `@item()`.
+    `@item()`. **Use the new *Invoke pipeline*, not *Invoke pipeline (Legacy)*** — see
+    Gotchas 2026-07-16. It needs a connection (`conn_fabric_pipelines`, **Organizational
+    account**); Legacy needs none but can only monitor the *parent* pipeline, which is
+    unacceptable when B7 fires 129 child runs at a WAF-fronted API. Set **Wait on
+    completion = ON**, or `Sequential` is meaningless (the loop would fire and move on).
 - After ForEach (On success): **Notebook** activity → `nb_update_watermark` per
       indicator set to `p_to` — simplest: three parallel notebook activities, one per
       indicator (explicit beats clever here).
@@ -384,6 +388,33 @@ Silver UTC rule is not box-ticking: without it, one hour each October **duplicat
 dedup-on-business-key hazard, since local timestamp alone is not unique) and one hour each March
 is **missing** (a gap that is correct and must not be flagged as an error). A DQ rule of "every
 day has 24 rows" would be wrong twice a year.
+
+**2026-07-16 — there are TWO Invoke pipeline activities; the new one requires a connection.**
+B5 failed to save with *"inv_ingest requires a connection"*. Fabric ships both:
+
+| | **Invoke pipeline (Legacy)** | **Invoke pipeline** (new) |
+|---|---|---|
+| Connection | none | **required** (token in Fabric's credential store) |
+| Scope | same workspace only | cross-workspace, ADF, Synapse |
+| Monitoring | **parent pipeline only** | **child pipelines too** |
+| Auth kinds | — | Organizational account · service principal · workspace identity |
+
+**Chose the new activity** despite the extra connection: B7 fires **129 child runs** at a
+WAF-fronted API, and B8's evidence *is* run history. Legacy would surface a failed parent with
+no drill-down — unacceptable for diagnosing a 403 at iteration ~30.
+
+**Auth = Organizational account.** Service principal and workspace identity both require the
+tenant setting *"Service principals can call Fabric public APIs"*, which needs admin rights we
+don't have on the student tenant (same wall as A5's GitHub provider). **Track B should revisit
+this** — on the own tenant, workspace identity is the better answer.
+
+**Phase F consequence — the same lesson as M3 from a new angle: *definitions deploy,
+connections don't*.** `conn_fabric_pipelines` stores **Gonzalo's user token** and lives in the
+**tenant**, not in Git; the definition references it by GUID only. So the repo still holds no
+credentials (the B2 boundary holds), but prod cannot inherit this connection: it must have its
+own, authenticated as something that isn't a person. That makes **two** connection GUIDs for
+`parameter.yml` (`conn_ree_apidatos`, `conn_fabric_pipelines`) on top of the lakehouse GUIDs —
+and it means the backfill currently runs **as Gonzalo**, which is fine in dev and wrong in prod.
 
 *(append further as encountered)*
 
