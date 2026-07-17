@@ -14,8 +14,14 @@
               "type": "InvokePipeline",
               "typeProperties": {
                 "parameters": {
-                  "p_indicator_path": "@item().indicator_path",
-                  "p_indicator_name": "@item().indicator_name",
+                  "p_indicator_path": {
+                    "value": "@item().indicator_path",
+                    "type": "Expression"
+                  },
+                  "p_indicator_name": {
+                    "value": "@item().indicator_name",
+                    "type": "Expression"
+                  },
                   "p_time_trunc": {
                     "value": "@item().time_trunc",
                     "type": "Expression"
@@ -100,7 +106,10 @@
               "type": "string"
             },
             "p_new_end": {
-              "value": "@concat(formatDateTime(addDays(utcNow(), -1), 'yyyy-MM-dd'), 'T23:59')",
+              "value": {
+                "value": "@concat(formatDateTime(addDays(utcNow(), -1), 'yyyy-MM-dd'), 'T23:59')",
+                "type": "Expression"
+              },
               "type": "string"
             }
           }
@@ -133,7 +142,10 @@
               "type": "string"
             },
             "p_new_end": {
-              "value": "@concat(formatDateTime(addDays(utcNow(), -1), 'yyyy-MM-dd'), 'T23:59')",
+              "value": {
+                "value": "@concat(formatDateTime(addDays(utcNow(), -1), 'yyyy-MM-dd'), 'T23:59')",
+                "type": "Expression"
+              },
               "type": "string"
             }
           }
@@ -148,7 +160,7 @@
         "name": "nb_wm_generacion",
         "dependsOn": [
           {
-            "activity": "fe_chunks",
+            "activity": "nb_wm_demanda",
             "dependencyConditions": [
               "Succeeded"
             ]
@@ -166,7 +178,10 @@
               "type": "string"
             },
             "p_new_end": {
-              "value": "@concat(formatDateTime(addDays(utcNow(), -1), 'yyyy-MM-dd'), 'T23:59')",
+              "value": {
+                "value": "@concat(formatDateTime(addDays(utcNow(), -1), 'yyyy-MM-dd'), 'T23:59')",
+                "type": "Expression"
+              },
               "type": "string"
             }
           }
@@ -181,7 +196,7 @@
         "name": "nb_wm_precios",
         "dependsOn": [
           {
-            "activity": "fe_chunks",
+            "activity": "nb_wm_generacion",
             "dependencyConditions": [
               "Succeeded"
             ]

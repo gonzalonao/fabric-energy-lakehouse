@@ -166,7 +166,7 @@
         "name": "nb_wm_generacion",
         "dependsOn": [
           {
-            "activity": "fe_chunks",
+            "activity": "nb_wm_demanda",
             "dependencyConditions": [
               "Succeeded"
             ]
@@ -202,7 +202,7 @@
         "name": "nb_wm_precios",
         "dependsOn": [
           {
-            "activity": "fe_chunks",
+            "activity": "nb_wm_generacion",
             "dependencyConditions": [
               "Succeeded"
             ]
