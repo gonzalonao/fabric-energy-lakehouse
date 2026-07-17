@@ -537,6 +537,21 @@ correctness. Retry was rejected as a band-aid.
 `demanda_evolucion` to `2026-07-16T23:59`) rather than re-running the ~1h backfill — the Bronze
 files were already correct and idempotent.
 
+**2026-07-17 — ⚠️ the Lakehouse table preview lies after external writes; only Spark reads the
+truth.** After the watermark repair, the explorer's table preview of `bronze.ctl_watermark` kept
+showing the pre-repair rows **even after clicking Refresh repeatedly**, while
+`spark.sql("SELECT * FROM bronze.ctl_watermark")` in a notebook showed the correct 3 rows
+immediately. Why: a Delta write commits to the transaction log in OneLake and is durable the
+instant the MERGE returns — but every *reading surface* except Spark sits behind its own
+asynchronous cache. The explorer's **Refresh re-syncs the object tree** (which tables exist),
+not the preview grid's cached result set; the preview invalidates on its own schedule (minutes).
+The **SQL analytics endpoint** is worse: a background metadata-sync process discovers Delta
+changes with documented latency (Microsoft ships a REST API purely to force this sync). Practical
+rule established for the rest of the project: **never use the preview grid or the SQL endpoint to
+verify a write** — verify with a Spark query in a notebook, and treat the preview as eventually
+consistent. This is M5's sibling: M5 says the endpoint can't *write*; this says the non-Spark
+surfaces don't promptly *read* either.
+
 *(append further as encountered)*
 
 ## Session log

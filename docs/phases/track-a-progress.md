@@ -102,8 +102,15 @@ Done criteria:
       ([PR #3](https://github.com/gonzalonao/fabric-energy-lakehouse/pull/3), `25a5f9a`).
       `nb_gen_backfill_chunks` retired `48be9de`. Both pipelines reviewed — structurally
       identical, all checks pass)*
-- [ ] B7 — backfill run 2023-01 → now
-- [ ] B8 — incremental + idempotent + kill-test proofs
+- [x] B7 — backfill run 2023-01 → now *(data complete: **129/129 files verified** byte-level
+      (JSON:API envelope, correct windows; Fabric's JsonSink adds a UTF-8 BOM — Phase C reader
+      note). The run itself finished **Failed**: the three parallel watermark MERGEs collided →
+      `ConcurrentAppendException` (guide Gotchas, **M6**). Watermark repaired manually via
+      `nb_update_watermark`; both pipelines rewired to a sequential watermark chain, committed
+      from Fabric as `0510dc2`. M4's design proved itself: failure produced re-fetch pressure,
+      never a gap)*
+- [ ] B8 — incremental + idempotent + kill-test proofs *(the daily run doubles as the
+      concurrency-fix proof — first green end-to-end run of the serialized chain)*
 - [ ] B9 — daily schedule active
 - [ ] B10 — review + evidence + 📣 asset capture
 
@@ -365,3 +372,18 @@ Scores, misconceptions and the drill bank live in **[`docs/learning-log.md`](../
   Both pipelines reviewed post-commit: `p_mode` correct on each, `p_from`/`p_to` expressions
   survived the notebook swap, Sequential ✅, connections present on both `inv_ingest`, watermarks
   gated on `Succeeded`. **Next: B7 — run the backfill (129 chunks; the WAF question).**
+- **2026-07-17 — B7 run + aftermath.** Backfill ran ~129 sequential child runs; **no WAF blocks**
+  (Imperva never fired on the polite 1-request-at-a-time cadence). Local verifier: **129/129 OK**
+  (structure, envelope, window bounds); first verifier pass reported 129× BAD_JSON — a bug in the
+  *verifier* (opened `utf-8`, not `utf-8-sig`): REE sends no BOM (`7B 22 64`), **Fabric's JsonSink
+  adds one**. Recorded as Phase C reader gotcha. The parent run then **failed at the watermark
+  step**: three parallel Delta MERGEs into unpartitioned `bronze.ctl_watermark` →
+  `ConcurrentAppendException` (Delta optimistic concurrency; commit-level conflict detection).
+  Ledgered as **M6**. Chose serialization over partitioning/retry (3 tiny writes, simplicity wins).
+  Repair: two manual `nb_update_watermark` runs (`generacion_estructura` bootstrapped,
+  `demanda_evolucion` advanced) → 3 rows @ `2026-07-16T23:59`, verified via Spark SQL — the
+  Lakehouse **table preview kept showing stale rows even after Refresh** (guide Gotchas; M5's
+  sibling: read surfaces sync async, Delta log is the truth). Both pipelines rewired
+  `fe_chunks → nb_wm_demanda → nb_wm_generacion → nb_wm_precios`, committed from Fabric
+  (`0510dc2`), definitions verified in Git, mirrored. **Next: B8 — incremental + idempotent +
+  kill-test; the daily run is also the concurrency-fix proof.**
