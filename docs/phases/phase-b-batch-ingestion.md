@@ -586,6 +586,24 @@ chain; next-day schedule → three). Related, deliberate: `pl_backfill_ree` stam
 `p_to`, so a short re-backfill **regresses** them — by design the next daily heals it
 (re-fetch is idempotent), which B8c/B8d turn into a feature demo.
 
+**2026-07-17 — schedules ARE part of the Git definition.** Applying the B9 schedule put a
+pending change in Source control: a new **`.schedules`** file inside
+`pl_ingest_daily.DataPipeline/` (own schema:
+`json-schemas/fabric/gitIntegration/schedules/1.0.0`), carrying enabled/type/times, the date
+range, and `localTimeZoneId` as a **Windows timezone ID** (`Romance Standard Time` = Madrid,
+DST-aware). Consequences: (1) schedules deploy with the item in Phase F — no manual
+re-creation in prod, but also **prod inherits dev's schedule** unless parameterized or edited;
+(2) the end date entered as 07-31 was stored as `endDateTime: 2026-07-30T23:59` — the last
+firing is Jul **30**, not 31. Filed under "not automatic vs automatic": the schedule *fires*
+automatically, but it *syncs* like everything else — via a deliberate commit.
+
+**2026-07-17 — actual backfill numbers (for README + drills).** 43 months × 3 indicators =
+**129 files, 3h53m49s** end-to-end (~1m22s per sequential `pl_ingest_ree` child — dominated by
+pipeline/Spark orchestration overhead, not the API, which answers in ~1–2s). Zero WAF blocks at
+that cadence. Daily incremental for contrast: **3m42s** no-op, **5m16s** with one indicator to
+top up. The 4-orders-of-magnitude work difference between backfill and daily is the watermark's
+entire value proposition in two numbers.
+
 *(append further as encountered)*
 
 ## Session log

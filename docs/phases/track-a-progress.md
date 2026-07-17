@@ -7,7 +7,9 @@ guides (`phase-*.md`); steps marked `[Track B]` there don't apply here. Sibling 
 **Tenant/capacity:** ESESA/UCAM student tenant · Fabric trial capacity ·
 window ends ~2026-07-31.
 **Git:** Fabric ↔ Azure DevOps repo (`develop`, `/fabric`); GitHub canonical via mirror.
-**Status:** 🔄 **Phase B — Batch ingestion** ([guide](phase-b-batch-ingestion.md)), at B1.
+**Status:** ✅ **Phase B — Batch ingestion complete** (2026-07-17; one outstanding item:
+`b9-scheduled-run-green.png` after tomorrow's 08:00 scheduled run — reminder set).
+Next: **Phase C — Transform & DQ** ([guide](phase-c-transform-dq.md)), starting at C1.
 Phase A ✅ complete (2026-07-14).
 **DevOps:** org `glopezc443` · project/repo `fabric-energy-lakehouse` · remote `devops`
 (`https://dev.azure.com/glopezc443/fabric-energy-lakehouse/_git/fabric-energy-lakehouse`).
@@ -116,14 +118,23 @@ Done criteria:
       **B8c** kill-test: Cancelled at 2m46s → same-params re-run green 7m22s, file set
       identical; **B8d** watermarks regressed to `06-30` by design, one daily run self-healed
       them to `07-16` — **M4 demonstrated live**. 8 screenshots in evidence/)*
-- [ ] B9 — daily schedule active
-- [ ] B10 — review + evidence + 📣 asset capture
+- [x] B9 — daily schedule active *(daily 08:00 Madrid, start 07-18, last run 07-30; the
+      schedule **serializes into Git** as a dedicated `.schedules` file (`f233aef`) — own
+      JSON schema, `localTimeZoneId: Romance Standard Time` — so it deploys with the
+      definition in Phase F. First unattended run verified tomorrow: screenshot pending,
+      reminder scheduled)*
+- [x] B10 — review + evidence + 📣 asset capture *(definition review passed: no secrets or
+      hardcoded emails (alert via library variable), Copy retry 3×60s, both ForEach
+      Sequential, watermark chains serialized, raw passthrough confirmed (no translator),
+      sink `workspaceId` all-zeros = current-workspace binding. Non-blocking: default 12h
+      activity timeouts; notebooks retry 0 — acceptable, daily self-heals. Evidence: 12
+      screenshots cataloged in `docs/evidence/phase-b/`)*
 
 Done criteria:
 - [x] Backfill loaded for all three indicators *(129/129 files verified; 3h53m49s)*
 - [x] Incremental run fetches only new dates (screenshots)
 - [x] Killed run re-runs idempotently
-- [ ] Schedule + failure alert wired *(alert wired in B3; schedule = B9)*
+- [x] Schedule + failure alert wired *(alert wired in B3; schedule committed `f233aef`)*
 
 ## Phase C — Transform & DQ · [guide](phase-c-transform-dq.md) · ⬜
 
@@ -407,3 +418,20 @@ Scores, misconceptions and the drill bank live in **[`docs/learning-log.md`](../
   re-prove serialization independently: `updated_at` marches demanda → generacion → precios,
   ~55s apart. Evidence: 8 screenshots renamed + cataloged (`b8d-watermark-corrupted` →
   `…-regressed`: it's designed behavior, not corruption). **Next: B9 — schedule the daily run.**
+- **2026-07-17 (night) — B9 + B10: Phase B closed.** M4 re-tested right after the kill-test and
+  **closed** (1/1; rejected "watermark resume" with the original miss on the table — `815c519`).
+  Schedule created (daily 08:00 Madrid, 07-18 → 07-30) and — the finding of the night — **it
+  serialized into Git** as `pl_ingest_daily.DataPipeline/.schedules` (`f233aef`): dedicated
+  gitIntegration JSON schema, `Romance Standard Time`, meaning schedules ride along in Phase F's
+  fabric-cicd deploy instead of needing manual re-creation. B10 definition review **passed**
+  (no secrets/emails, alert via library variable, Copy retry 3×60s, Sequential ForEach ×2,
+  serialized watermark chains ×2, raw passthrough, `workspaceId` zeros). Non-blocking notes:
+  12h default timeouts, notebooks retry 0, `supportRFC5988` default-true-but-inert, last
+  scheduled firing Jul 30. **📣 Portfolio assets captured for the Phase C checkpoint:** the
+  numbers (43 months × 3 indicators, 129/129 verified, **3h53m49s backfill vs 3m42s no-op /
+  5m16s incremental**), the incident arc (`b7-backfill-run-failed-concurrency` →
+  `b7-pipeline-serialized-chain` → `b8a-daily-noop-serialized`), the M4 arc
+  (`b8c-*` kill-test pair → `b8d-watermark-regressed` → `b8d-watermark-selfhealed`), and the
+  economics pair (`b8b-run-history-*`). Outstanding: `b9-scheduled-run-green.png` tomorrow
+  (reminder task set, fires 08:15). **Next: Phase C — Transform & DQ, starting at C1
+  (learn first: Delta, V-Order, partitioning, MLVs); M5 and M6 re-tests are due there.**
