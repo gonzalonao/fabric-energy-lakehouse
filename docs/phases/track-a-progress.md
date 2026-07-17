@@ -7,8 +7,9 @@ guides (`phase-*.md`); steps marked `[Track B]` there don't apply here. Sibling 
 **Tenant/capacity:** ESESA/UCAM student tenant · Fabric trial capacity ·
 window ends ~2026-07-31.
 **Git:** Fabric ↔ Azure DevOps repo (`develop`, `/fabric`); GitHub canonical via mirror.
-**Status:** 🚧 **Phase C — Transform & DQ in progress** (2026-07-18; C1 + C1.5 done, 🎓 6/6).
-Next: **C2** — `energy_lakehouse` package + DQ module + tests + wheel (branch `feature/dq-module`).
+**Status:** 🚧 **Phase C — Transform & DQ in progress** (2026-07-18; C1, C1.5 (🎓 6/6), C2 done).
+Next: **C3** `[YOU]` — create Fabric Environment `env_energy`, upload the wheel
+(`dist/energy_lakehouse-0.1.0-py3-none-any.whl`), publish, set as workspace Spark default.
 Phase B ✅ complete (2026-07-17); one outstanding B item: `b9-scheduled-run-green.png` after
 today's 08:00 scheduled run — reminder set.
 Phase A ✅ complete (2026-07-14).
@@ -144,7 +145,11 @@ Done criteria:
       `.collect()` OOM, ~1 GB partition rule, MLV vs notebook aggregate; medallion+DQ-gate
       diagram drawn)*
 - [x] C1.5 — 🎓 Delta/DQ/MLV check *(**6/6 — first perfect check**; see Learning log)*
-- [ ] C2 — `energy_lakehouse` package + DQ module + tests + wheel
+- [x] C2 — `energy_lakehouse` package + DQ module + tests + wheel *(hatchling package in
+      `src/`; typed parsers + pure DQ checks + write-then-raise gate; 24 tests over **real
+      captured REE fixtures**; ruff + `mypy --strict` + pytest all green;
+      [PR #4](https://github.com/gonzalonao/fabric-energy-lakehouse/pull/4) → `2c2ea00`.
+      Wheel: `dist/energy_lakehouse-0.1.0-py3-none-any.whl` (gitignored) for C3)*
 - [ ] C3 — Fabric environment `env_energy` with the wheel
 - [ ] C4 — silver + DQ-gate notebooks; units confirmed
 - [ ] C5 — corrupted-file test (fail → clean → green)
@@ -452,3 +457,16 @@ Scores, misconceptions and the drill bank live in **[`docs/learning-log.md`](../
   live re-tests land at C7 and C4/C5 respectively, not at C1.5. **Next: C2 — build the
   `energy_lakehouse` package (parsers + DQ module + tests), branch `feature/dq-module`, PR to
   develop, then `uv build` the wheel for C3.**
+- **2026-07-18 — C2 done: `energy_lakehouse` package built, tested, wheel'd.** Captured real
+  REE samples live for fixtures (tokenless `apidatos.ree.es`, sequential — no WAF). Package
+  (hatchling, `src/` layout): `parsers.py` (typed per-indicator parsers), `dq/checks.py` (pure
+  null/range/freshness/row-count checks), `dq/gate.py` (write-then-raise, the only Spark-touching
+  module), `models.py`, `indicators.py`. **Deliberately Spark-free at import** — verified by
+  importing the wheel in an env with no pyspark. 24 pytest cases over captured fixtures;
+  ruff + `mypy --strict` + pytest green; `ruff` scoped to exclude `fabric/` (notebooks aren't
+  plain modules). Five REE-shape findings confirmed and coded (see phase-c guide Gotchas):
+  composite-aggregate exclusion, `is_renewable` from the payload, civil-date-vs-UTC split,
+  per-series price grain, structural-quarantine vs semantic-gate boundary.
+  [PR #4](https://github.com/gonzalonao/fabric-energy-lakehouse/pull/4) → `2c2ea00`, mirrored
+  to devops (0/0). **Next: C3 `[YOU]` — Fabric Environment `env_energy` + wheel upload + publish
+  + set workspace Spark default.**

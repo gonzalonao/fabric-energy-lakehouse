@@ -166,6 +166,42 @@
 *(expected suspects: MLV preview syntax/limitations on schema-enabled lakehouses,
 environment publish latency, Spark session cold starts on 64 CU)*
 
+### C2 — REE payload shape (confirmed against live captures, 2026-07-18)
+
+Captured one real sample per indicator (plus a 2024 **and** 2025 price sample) straight from
+`apidatos.ree.es` to drive the parser tests. Five things the parsers now encode — each was a
+guess before, now verified — and each reshapes Silver/Gold:
+
+1. **The renewable flag is in the payload.** Each generation series carries
+   `attributes.type` ∈ {`Renovable` (7), `No-Renovable` (8), `Generación total` (1)}. So
+   `dim_technology.is_renewable` comes straight from the API — **no hardcoded mapping** to
+   drift out of date.
+2. **`Generación total` is a series, not a total field.** It sits among the 16 as the composite
+   sum (`attributes.composite = True`). The parser excludes it by that flag (language-proof,
+   unlike matching the title). Including it would double every daily total — the classic
+   aggregate-row trap. Kept as a candidate DQ cross-check for later (Σtech ≈ total).
+3. **Daily grain keys on the civil date, not UTC.** A daily bucket is stamped local midnight
+   (`…T00:00+01:00`); UTC-converting it lands on the **previous day**. So demand/generation keep
+   the local calendar date; only the sub-daily price instants normalize to UTC (where UTC is
+   load-bearing for a DST-unique key).
+4. **Price grain differs per series *within one file*.** In the 2025 sample, PVPC is still
+   hourly (24 points/day) while `Precio mercado spot` is **15-minute (96 points/day)**. So
+   `period_minutes` is derived per series from timestamp spacing (modal gap, DST-robust) — it
+   cannot be inferred from the indicator, the file, or `time_trunc`.
+5. **Structural vs semantic failure is the parser/gate boundary.** Records that can't produce a
+   typed row (null value, missing datetime, non-numeric) are **quarantined by the parser**; rows
+   that parse but look wrong (negative demand, out-of-range price) pass through and are **judged
+   by the DQ gate**. This is exactly the C5 corrupted-file split (truncated record → quarantine;
+   negative values → gate FAIL), designed in rather than discovered there.
+
+**Packaging note.** `ruff` is scoped to `src/`+`tests/` (`extend-exclude = ["fabric"]`) because
+the serialized notebooks have mid-file imports and a runtime-injected `spark` — they are not
+plain modules. `pyspark` is **not** a wheel dependency (Fabric provides it); the package imports
+cleanly without it, and `dq/gate.py` is the only Spark-touching module (import is lazy /
+`TYPE_CHECKING`). `INDICATORS` is duplicated for now between `nb_gen_chunks` and
+`energy_lakehouse.indicators` — collapses in C4 once `env_energy` lets the notebook import the
+wheel.
+
 ## Session log
 
 *Moved to the per-track trackers ([A](track-a-progress.md) / [B](track-b-progress.md)) — phase-specific gotchas stay above.*
