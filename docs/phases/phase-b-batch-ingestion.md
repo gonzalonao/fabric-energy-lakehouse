@@ -220,14 +220,28 @@ by month removes that trap.
 
 ### B8 `[YOU]` Prove incremental + idempotent (the money screenshots)
 
-- Run `pl_ingest_daily` manually → it should fetch only the window
-      `watermark → yesterday` (small/no-op). Screenshot run history showing the tiny
-      incremental run right after the big backfill.
-- Run it again immediately → near-zero window, same files overwritten, no new
-      paths. Screenshot.
-- Kill-test: start `pl_backfill_ree` for a short range (e.g. one month), **Cancel**
-      it mid-run from Monitor, re-run same params → completes green, file set identical.
-      Screenshot cancelled + rerun pair.
+> **Prereq:** Source control → **Update all** first — B8 needs the month-snap fix in
+> `nb_gen_chunks` (Gotchas 2026-07-17, *daily mode would have clobbered month files*).
+
+- **B8a — no-op + concurrency-fix proof.** Run `pl_ingest_daily` manually with all
+      watermarks current: `nb_chunks` exits `[]`, `fe_chunks` iterates 0 times, the three
+      `nb_wm_*` notebooks run **one after another**, run ends green — first end-to-end
+      proof of the serialized watermark chain. Screenshot the run's Gantt view
+      (non-overlapping `nb_wm_*` bars).
+- **B8b — incremental fetch (simulated lag).** Drag `demanda_evolucion` back 3 days via
+      `nb_update_watermark`, re-run `pl_ingest_daily`: exactly **1 chunk**
+      (month-to-date, demanda only), other two no-op; the month file is overwritten
+      whole — count unchanged, timestamp new. Screenshot run history (tiny incremental
+      beside the big backfill) + the file's new timestamp.
+- **B8c — kill-test.** Run `pl_backfill_ree` for one month (`p_from` = `2026-06-01`,
+      `p_to` = `2026-06-30`), **Cancel** it mid-run from Monitor, re-run same params →
+      green, file set identical. Screenshot cancelled + rerun pair. Note: on success the
+      backfill stamps all watermarks to `p_to` — a deliberate **regression**; don't fix
+      it by hand, B8d proves the system heals itself.
+- **B8d — self-heal.** Run `pl_ingest_daily` once more: all three re-fetch
+      month-to-date (idempotent overwrite) and the watermarks return to yesterday.
+      Verify `ctl_watermark` with a **Spark query, not the preview grid** (Gotchas) and
+      screenshot the 3-row result.
 
 ### B9 `[YOU]` Schedule + final commit
 
@@ -551,6 +565,26 @@ rule established for the rest of the project: **never use the preview grid or th
 verify a write** — verify with a Spark query in a notebook, and treat the preview as eventually
 consistent. This is M5's sibling: M5 says the endpoint can't *write*; this says the non-Spark
 surfaces don't promptly *read* either.
+
+**2026-07-17 — 🐛 caught before B8: daily mode would have clobbered month files.** Reviewing
+B8's "same files overwritten" claim exposed a latent data-loss bug in the daily design. Bronze
+stores **one file per (indicator, month)** — `pl_ingest_ree` derives folder and filename from
+`p_start` and the Copy activity **overwrites the file whole**. Daily mode fetched
+`watermark+1 → yesterday`, a *mid-month* window: the first post-backfill daily run
+(`07-17 → 07-17`) would have replaced `demanda_evolucion_202607.json` — holding July 1–16 —
+with a file holding **only July 17**. Sixteen days silently gone from Bronze; Phase C would
+read the fragment. The failure mode is subtle because each run *looks* green — the loss only
+shows when a reader needs the clobbered days.
+**Fix:** in `daily_chunks`, snap the fetch start to the **1st of its month**
+(`start.replace(day=1)`) *after* the currency check — so an up-to-date indicator is still a
+true no-op, but any real fetch re-requests month-to-date and the overwrite is complete again.
+Cost: ≤ ~31 redundant days per indicator per day. Invariant restored: **a Bronze file is always
+a complete month(-to-date) API response**, which is what makes whole-file overwrite a valid
+idempotency mechanism. Verified locally against five scenarios (current → 0 chunks; 3-day lag
+→ one month-to-date chunk; post-kill-test regression → three; multi-month outage → month-clipped
+chain; next-day schedule → three). Related, deliberate: `pl_backfill_ree` stamps watermarks to
+`p_to`, so a short re-backfill **regresses** them — by design the next daily heals it
+(re-fetch is idempotent), which B8c/B8d turn into a feature demo.
 
 *(append further as encountered)*
 

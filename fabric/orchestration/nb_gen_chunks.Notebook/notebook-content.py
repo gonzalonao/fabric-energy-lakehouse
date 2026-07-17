@@ -271,6 +271,13 @@ def daily_chunks(
     chunks** — the correct outcome for a same-day re-run, and why the caller must
     tolerate an empty array.
 
+    The fetch start is snapped back to the first day of its month. Bronze stores one
+    file per (indicator, month) and the Copy activity overwrites that file whole, so a
+    mid-month window such as ``watermark+1 -> yesterday`` would replace a complete month
+    file with a fragment. Re-fetching month-to-date keeps the file complete at a cost of
+    at most ~31 redundant days per indicator. Currency is checked *before* the snap so
+    an up-to-date indicator stays a true no-op instead of re-fetching its month forever.
+
     Args:
         indicators: Series to cover.
         watermarks: Mapping of indicator name to stored ``last_end``.
@@ -299,7 +306,8 @@ def daily_chunks(
                 watermarks[indicator.name],
             )
             continue
-        chunks.extend(chunks_for(indicator, start, end))
+        # Month-boundary snap — see docstring: partial windows would clobber month files.
+        chunks.extend(chunks_for(indicator, start.replace(day=1), end))
     return chunks
 
 
