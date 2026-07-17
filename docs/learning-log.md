@@ -29,6 +29,7 @@ answer, not just recognize it.
 | 2026-07-13 | Phase A opener (pre-build) | A / Phase A | 1/3 | 2 misconceptions logged (M1, M2) |
 | 2026-07-14 | A11 — Git integration (post-build) | A / Phase A | 3/4 | **M1 + M2 closed**; M3 opened |
 | 2026-07-14 | B1.5 — ingestion & watermarks (pre-build) | A / Phase B | 4/6 | M4 + M5 opened. Correct: Copy-vs-Web, watermark-after-success, ForEach sequential, the `Generación total` trap |
+| 2026-07-17 | M4 re-test (right after running the B8c kill-test) | A / Phase B | 1/1 | **M4 closed** — rejected "watermark resume" with the original miss on the table |
 
 ---
 
@@ -105,7 +106,7 @@ it or not.
 **Re-test at:** Phase F (before building the deploy) and Phase G — **open this file and ask
 him to find what breaks.** Far better than re-asking the multiple-choice.
 
-### M4 — "The watermark is what makes a re-run safe" ⬜ open (2026-07-14)
+### M4 — "The watermark is what makes a re-run safe" ✅ closed (2026-07-17, at B8)
 
 **Believed:** re-running a slice is safe because the watermark stops `pl_ingest_ree` from
 re-fetching a window it already has.
@@ -131,6 +132,16 @@ re-fetching a window it already has.
 **Why it matters:** an idempotency guarantee that actually rests on a watermark is a guarantee
 that evaporates exactly when you need it — on the failed run, where the watermark didn't move.
 **Re-test at:** B8 (the kill-test is the live demonstration) and Phase G.
+
+**✅ Closed 2026-07-17, immediately after running B8c himself.** Re-test question (differently
+worded, all four plausible mechanisms offered): *"you cancelled the backfill mid-run, re-ran
+identical params, got an identical file set — what made that safe?"* Distractors included the
+original miss (*watermark resume*) plus the profile-pattern trap (*Fabric auto-resume*) and a
+wrong-layer answer (*Delta rollback* — `Files/` isn't Delta). Answered **deterministic
+overwrite**, correctly rejecting the watermark option *after having just watched the cancelled
+run die before the watermark chain* — the live proof that the watermark couldn't have been the
+protector. Gap counts as closed: correct, on new wording, after the correction, with the
+original wrong answer on the table. Still gets one cold pass in the Phase G full-bank drill.
 
 ### M5 — "A Lookup can write, and it commits automatically on success" ⬜ open (2026-07-14)
 
