@@ -2,42 +2,6 @@
   "properties": {
     "activities": [
       {
-        "type": "TridentNotebook",
-        "typeProperties": {
-          "notebookId": "7ec6dc40-6091-aa9e-4141-ce923e668746",
-          "workspaceId": "00000000-0000-0000-0000-000000000000",
-          "parameters": {
-            "p_mode": {
-              "value": "backfill",
-              "type": "string"
-            },
-            "p_from": {
-              "value": {
-                "value": "@pipeline().parameters.p_from",
-                "type": "Expression"
-              },
-              "type": "string"
-            },
-            "p_to": {
-              "value": {
-                "value": "@pipeline().parameters.p_to",
-                "type": "Expression"
-              },
-              "type": "string"
-            }
-          }
-        },
-        "policy": {
-          "timeout": "0.12:00:00",
-          "retry": 0,
-          "retryIntervalInSeconds": 30,
-          "secureInput": false,
-          "secureOutput": false
-        },
-        "name": "nb_chunks",
-        "dependsOn": []
-      },
-      {
         "type": "ForEach",
         "typeProperties": {
           "isSequential": true,
@@ -50,14 +14,8 @@
               "type": "InvokePipeline",
               "typeProperties": {
                 "parameters": {
-                  "p_indicator_path": {
-                    "value": "@item().indicator_path",
-                    "type": "Expression"
-                  },
-                  "p_indicator_name": {
-                    "value": "@item().indicator_name",
-                    "type": "Expression"
-                  },
+                  "p_indicator_path": "@item().indicator_path",
+                  "p_indicator_name": "@item().indicator_name",
                   "p_time_trunc": {
                     "value": "@item().time_trunc",
                     "type": "Expression"
@@ -104,6 +62,36 @@
       {
         "type": "TridentNotebook",
         "typeProperties": {
+          "notebookId": "7ec6dc40-6091-aa9e-4141-ce923e668746",
+          "workspaceId": "00000000-0000-0000-0000-000000000000",
+          "parameters": {
+            "p_mode": {
+              "value": "daily",
+              "type": "string"
+            },
+            "p_from": {
+              "value": "",
+              "type": "string"
+            },
+            "p_to": {
+              "value": "",
+              "type": "string"
+            }
+          }
+        },
+        "policy": {
+          "timeout": "0.12:00:00",
+          "retry": 0,
+          "retryIntervalInSeconds": 30,
+          "secureInput": false,
+          "secureOutput": false
+        },
+        "name": "nb_chunks",
+        "dependsOn": []
+      },
+      {
+        "type": "TridentNotebook",
+        "typeProperties": {
           "notebookId": "e3aee25b-ed44-a622-491c-14d6c55fa8b3",
           "workspaceId": "00000000-0000-0000-0000-000000000000",
           "parameters": {
@@ -112,10 +100,7 @@
               "type": "string"
             },
             "p_new_end": {
-              "value": {
-                "value": "@concat(pipeline().parameters.p_to, 'T23:59')",
-                "type": "Expression"
-              },
+              "value": "@concat(formatDateTime(addDays(utcNow(), -1), 'yyyy-MM-dd'), 'T23:59')",
               "type": "string"
             }
           }
@@ -148,10 +133,7 @@
               "type": "string"
             },
             "p_new_end": {
-              "value": {
-                "value": "@concat(pipeline().parameters.p_to, 'T23:59')",
-                "type": "Expression"
-              },
+              "value": "@concat(formatDateTime(addDays(utcNow(), -1), 'yyyy-MM-dd'), 'T23:59')",
               "type": "string"
             }
           }
@@ -184,10 +166,7 @@
               "type": "string"
             },
             "p_new_end": {
-              "value": {
-                "value": "@concat(pipeline().parameters.p_to, 'T23:59')",
-                "type": "Expression"
-              },
+              "value": "@concat(formatDateTime(addDays(utcNow(), -1), 'yyyy-MM-dd'), 'T23:59')",
               "type": "string"
             }
           }
@@ -209,14 +188,6 @@
           }
         ]
       }
-    ],
-    "parameters": {
-      "p_from": {
-        "type": "string"
-      },
-      "p_to": {
-        "type": "string"
-      }
-    }
+    ]
   }
 }
