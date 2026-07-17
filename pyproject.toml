@@ -1,0 +1,46 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "energy_lakehouse"
+version = "0.1.0"
+description = "Typed REE parsers and data-quality checks for the Fabric energy lakehouse."
+requires-python = ">=3.11"
+license = "MIT"
+authors = [{ name = "Gonzalo López Crespo" }]
+# No runtime dependencies: pyspark is provided by the Fabric Spark runtime, not vendored
+# into the wheel. Parsers and DQ checks are pure Python and Spark-free by design.
+dependencies = []
+
+[dependency-groups]
+dev = ["ruff>=0.6", "mypy>=1.11", "pytest>=8"]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/energy_lakehouse"]
+
+[tool.ruff]
+line-length = 88
+target-version = "py311"
+src = ["src", "tests"]
+# Fabric notebooks serialize with mid-file imports and a runtime-injected `spark`; they
+# are not plain modules and are linted in their own right, not here.
+extend-exclude = ["fabric"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "N", "UP", "B", "SIM", "PTH", "RUF", "D"]
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
+[tool.ruff.lint.per-file-ignores]
+# Tests don't need module/function docstrings.
+"tests/*" = ["D100", "D103", "D104"]
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+files = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
