@@ -109,16 +109,21 @@ Done criteria:
       `nb_update_watermark`; both pipelines rewired to a sequential watermark chain, committed
       from Fabric as `0510dc2`. M4's design proved itself: failure produced re-fetch pressure,
       never a gap)*
-- [ ] B8 — incremental + idempotent + kill-test proofs *(the daily run doubles as the
-      concurrency-fix proof — first green end-to-end run of the serialized chain)*
+- [x] B8 — incremental + idempotent + kill-test proofs *(all four sub-proofs green in one
+      evening: **B8a** no-op run = first end-to-end proof of the serialized watermark chain
+      (Gantt: strictly sequential `nb_wm_*`); **B8b** simulated 3-day lag → 1 month-to-date
+      chunk, month file overwritten whole — **3m42s/5m16s daily vs 3h53m49s backfill**;
+      **B8c** kill-test: Cancelled at 2m46s → same-params re-run green 7m22s, file set
+      identical; **B8d** watermarks regressed to `06-30` by design, one daily run self-healed
+      them to `07-16` — **M4 demonstrated live**. 8 screenshots in evidence/)*
 - [ ] B9 — daily schedule active
 - [ ] B10 — review + evidence + 📣 asset capture
 
 Done criteria:
-- [ ] Backfill loaded for all three indicators
-- [ ] Incremental run fetches only new dates (screenshots)
-- [ ] Killed run re-runs idempotently
-- [ ] Schedule + failure alert wired
+- [x] Backfill loaded for all three indicators *(129/129 files verified; 3h53m49s)*
+- [x] Incremental run fetches only new dates (screenshots)
+- [x] Killed run re-runs idempotently
+- [ ] Schedule + failure alert wired *(alert wired in B3; schedule = B9)*
 
 ## Phase C — Transform & DQ · [guide](phase-c-transform-dq.md) · ⬜
 
@@ -387,3 +392,18 @@ Scores, misconceptions and the drill bank live in **[`docs/learning-log.md`](../
   `fe_chunks → nb_wm_demanda → nb_wm_generacion → nb_wm_precios`, committed from Fabric
   (`0510dc2`), definitions verified in Git, mirrored. **Next: B8 — incremental + idempotent +
   kill-test; the daily run is also the concurrency-fix proof.**
+- **2026-07-17 (evening) — B8 complete, but first: a data-loss bug caught pre-run.** Prepping B8
+  exposed that daily mode's `watermark+1 → yesterday` window is *mid-month* while Bronze stores
+  one whole-overwritten file per (indicator, month) — the first post-backfill daily run would
+  have replaced July's complete file with a one-day fragment. Fixed in `nb_gen_chunks`
+  (`ed4fbce`, month-boundary snap after the currency check; 5 scenarios verified locally;
+  guide Gotchas has the full write-up). Then all four B8 proofs ran green: **B8a** no-op
+  (`exitValue "[]"`, serialized `nb_wm_*` Gantt — the ConcurrentAppendException fix confirmed
+  end-to-end); **B8b** 3-day simulated lag → exactly 1 month-to-date chunk, July file count
+  unchanged/timestamp new; **B8c** cancel at 2m46s → identical-params re-run green 7m22s;
+  **B8d** the backfill's designed watermark regression (`p_to` stamp → `06-30`) healed by one
+  daily run (`07-16`) with zero manual repair. Actual full-backfill duration recorded:
+  **3h53m49s** vs **3m42s** daily no-op — the portfolio contrast number. Both `b8d` shots also
+  re-prove serialization independently: `updated_at` marches demanda → generacion → precios,
+  ~55s apart. Evidence: 8 screenshots renamed + cataloged (`b8d-watermark-corrupted` →
+  `…-regressed`: it's designed behavior, not corruption). **Next: B9 — schedule the daily run.**
