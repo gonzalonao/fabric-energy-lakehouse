@@ -474,6 +474,31 @@ read/write asymmetry (**M5**) isn't visible there. It is still demonstrated at *
 SQL proofs), which was already planned — so the lesson moves rather than disappears. The
 endpoint's read-only nature remains the reason `nb_update_watermark` exists at all.
 
+**2026-07-17 — ⚠️ Fabric's JSON sink adds a UTF-8 BOM; REE does not send one.** The B7 backfill
+landed all 129 files cleanly (no WAF interference), but every file begins with the 3-byte BOM
+`EF BB BF`. Confirmed the source: a live fetch of the REE endpoint starts with `7B 22 64`
+(`{"d`) — **no BOM**. So the Copy activity's `JsonSink` prepends it on write. This **refines the
+B3 "byte-faithful Bronze" claim**: the JSON *content and structure* are faithful, but Fabric
+wraps the payload with a BOM. (`raw response 2946 B vs landed 2 KB` at B3 didn't catch it — the
+file view rounds to KB.)
+
+**Phase C consequence — a known reader gotcha, no longer a surprise:** Silver must read these
+with BOM handling. `json.load` / plain `utf-8` **raises** `Unexpected UTF-8 BOM`; decode with
+`utf-8-sig`. Spark's `spark.read.json()` can also mis-handle a leading BOM (it may read the BOM
+into the first field name), so the silver reader needs an explicit encoding/`multiLine` setting
+or a strip step — verify at C4.
+
+**2026-07-17 — the landing check exposed a real gap: Bronze has no integrity verification, and
+that's currently by design.** Gonzalo asked (fairly) how we know every file landed properly.
+Answer: nothing checks — Bronze is raw landing, DQ is Phase C. The WAF challenge-page risk
+(green pipeline, HTML in a `.json`) is the one failure mode that *doesn't* wait for Phase C, so
+an **ad-hoc landing verifier** was run (parse as JSON:API, count points, flag HTML/empty/missing).
+Result: 129/129 present, no WAF pages, `precios` size doubles at 2025-01 (the 15-min cutover,
+visible on disk). **Decision for Phase C:** promote this from a throwaway into a real
+**landing-integrity assertion** after the backfill / before Silver — count == expected, first
+byte is `{` after BOM-strip, `included` non-empty. It caught the BOM immediately, which is
+exactly the argument for keeping it.
+
 *(append further as encountered)*
 
 ## Session log
