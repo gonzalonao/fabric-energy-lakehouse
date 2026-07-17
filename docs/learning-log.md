@@ -30,6 +30,7 @@ answer, not just recognize it.
 | 2026-07-14 | A11 — Git integration (post-build) | A / Phase A | 3/4 | **M1 + M2 closed**; M3 opened |
 | 2026-07-14 | B1.5 — ingestion & watermarks (pre-build) | A / Phase B | 4/6 | M4 + M5 opened. Correct: Copy-vs-Web, watermark-after-success, ForEach sequential, the `Generación total` trap |
 | 2026-07-17 | M4 re-test (right after running the B8c kill-test) | A / Phase B | 1/1 | **M4 closed** — rejected "watermark resume" with the original miss on the table |
+| 2026-07-18 | C1.5 — Delta, DQ gate & MLVs (pre-build) | A / Phase C | **6/6** | First perfect check. Beat the "automatic" trap twice head-on (V-Order-only; gate-doesn't-auto-retry). No new misconceptions |
 
 ---
 
@@ -224,6 +225,28 @@ Questions to run cold at Phase G / end of project. Grows one section per phase.
     (Reach: serialize the transactions, or batch them into one transaction; parallel blind writes
     to an unpartitioned Delta table are the anti-pattern.)
 
+### Phase C — Transform & DQ
+
+1. You append to a typed Silver table and a parser bug flips a column's type. With default
+   Delta settings, what happens — and why is that behavior a *feature* for DQ? (Reach: schema
+   enforcement rejects the whole write; a parser regression can't silently poison Silver.)
+2. Which of V-Order, OPTIMIZE, VACUUM is automatic on a Fabric Spark write, and which two must
+   you run yourself? What does each of the manual two solve? (Reach: V-Order auto = read layout;
+   OPTIMIZE manual = small-file compaction; VACUUM manual = deletes dead files, costs time travel.)
+3. What does `VACUUM` physically do, what's the default retention, and name two things it can
+   break. (Reach: deletes unreferenced Parquet past retention; breaks time travel + in-flight readers.)
+4. Why is `.collect()` on a Silver table dangerous, and what are the three safe alternatives?
+   (Reach: pulls the whole distributed set to the driver → OOM; use display / limit / Spark aggregations.)
+5. Our tables are a few hundred k rows. Should we partition by year? Justify with the ~1 GB rule
+   and name the failure mode of doing it anyway. (Reach: no; tiny partitions = small-file problem.)
+6. `nb_dq_gate` writes every result to `ops.dq_results` *before* it raises. Why not raise on the
+   first failure? (Reach: all failures diagnosable from the table, not just the first in stderr.)
+7. MLV vs a notebook-written aggregate — give one case where each is the right call. (Reach: MLV
+   for stable relational aggregates you want engine-refreshed with zero maintenance; notebook for
+   arbitrary Python, custom schedules, or where MLV preview limits bite.)
+8. Schema enforcement vs schema evolution — which is default, and how do you opt into the other?
+   (Reach: enforcement default; `mergeSchema` to add columns, `overwriteSchema` for full rebuilds.)
+
 ## Misconception ledger (cont.)
 
 ### M6 — "Independent parallel writes to one Delta table are fine" ⬜ open (2026-07-17)
@@ -259,6 +282,13 @@ commit on its own**). His Delta/Spark/data-modeling instincts are solid; the gap
 **So:** when quizzing on a new Fabric feature, always include a distractor of the form
 "…happens automatically." That is the misconception most likely to be live. **It landed again
 at B1.5 (M5)** — the pattern is stable and worth planting every time.
+
+**Update (C1.5, 2026-07-18): the trap was planted twice and beaten both times** — he correctly
+picked V-Order as the *only* automatic write step (rejecting "all three") and rejected the
+"gate auto-retries failed checks" distractor. First time the signature miss didn't land. Not
+evidence the axis is closed (it's a recognition test, not a cold recall, and M5's *live*
+re-test — the read-only SQL endpoint — is still pending at C7); keep planting. But worth noting
+the Delta-storage sub-area specifically is now solid under adversarial phrasing.
 
 **A second, related axis emerged at B1.5 (M4): crediting the wrong mechanism.** He knows both
 mechanisms exist and what each does, but attributes the guarantee to the more *visible* one

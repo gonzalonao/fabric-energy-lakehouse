@@ -7,9 +7,10 @@ guides (`phase-*.md`); steps marked `[Track B]` there don't apply here. Sibling 
 **Tenant/capacity:** ESESA/UCAM student tenant · Fabric trial capacity ·
 window ends ~2026-07-31.
 **Git:** Fabric ↔ Azure DevOps repo (`develop`, `/fabric`); GitHub canonical via mirror.
-**Status:** ✅ **Phase B — Batch ingestion complete** (2026-07-17; one outstanding item:
-`b9-scheduled-run-green.png` after tomorrow's 08:00 scheduled run — reminder set).
-Next: **Phase C — Transform & DQ** ([guide](phase-c-transform-dq.md)), starting at C1.
+**Status:** 🚧 **Phase C — Transform & DQ in progress** (2026-07-18; C1 + C1.5 done, 🎓 6/6).
+Next: **C2** — `energy_lakehouse` package + DQ module + tests + wheel (branch `feature/dq-module`).
+Phase B ✅ complete (2026-07-17); one outstanding B item: `b9-scheduled-run-green.png` after
+today's 08:00 scheduled run — reminder set.
 Phase A ✅ complete (2026-07-14).
 **DevOps:** org `glopezc443` · project/repo `fabric-energy-lakehouse` · remote `devops`
 (`https://dev.azure.com/glopezc443/fabric-energy-lakehouse/_git/fabric-energy-lakehouse`).
@@ -138,8 +139,11 @@ Done criteria:
 
 ## Phase C — Transform & DQ · [guide](phase-c-transform-dq.md) · ⬜
 
-- [ ] C1 — learn first (Delta, V-Order, partitioning, MLVs)
-- [ ] C1.5 — 🎓 Delta/DQ/MLV check
+- [x] C1 — learn first (Delta, V-Order, partitioning, MLVs) *(taught in-session in depth —
+      Delta log anatomy, enforcement vs evolution, V-Order/OPTIMIZE/VACUUM manual-vs-auto split,
+      `.collect()` OOM, ~1 GB partition rule, MLV vs notebook aggregate; medallion+DQ-gate
+      diagram drawn)*
+- [x] C1.5 — 🎓 Delta/DQ/MLV check *(**6/6 — first perfect check**; see Learning log)*
 - [ ] C2 — `energy_lakehouse` package + DQ module + tests + wheel
 - [ ] C3 — Fabric environment `env_energy` with the wheel
 - [ ] C4 — silver + DQ-gate notebooks; units confirmed
@@ -234,6 +238,7 @@ Scores, misconceptions and the drill bank live in **[`docs/learning-log.md`](../
 | 2026-07-13 | Phase A opener (pre-build) | 1/3 |
 | 2026-07-14 | A11 — Git integration (post-build) | 3/4 — 2 gaps closed, 1 open (**M3**: prod deploy direction; re-test at Phase F) |
 | 2026-07-14 | B1.5 — ingestion & watermarks (pre-build) | 4/6 — 2 gaps open (**M4**: watermark ≠ idempotency, re-test at B8; **M5**: SQL endpoint is read-only, re-test at Phase C) |
+| 2026-07-18 | C1.5 — Delta, DQ gate & MLVs (pre-build) | **6/6** — first perfect check; beat the "automatic" trap twice. M5 (SQL endpoint read-only) re-test still due at C7; M6 (Delta concurrency) at C4/C5 |
 
 ## Session log (Track A)
 
@@ -435,3 +440,15 @@ Scores, misconceptions and the drill bank live in **[`docs/learning-log.md`](../
   economics pair (`b8b-run-history-*`). Outstanding: `b9-scheduled-run-green.png` tomorrow
   (reminder task set, fires 08:15). **Next: Phase C — Transform & DQ, starting at C1
   (learn first: Delta, V-Order, partitioning, MLVs); M5 and M6 re-tests are due there.**
+- **2026-07-18 — C1 + C1.5 done (Phase C opened).** C1 taught in-session (Gonzalo asked for the
+  material in-chat rather than MS Learn links): Delta table = Parquet + `_delta_log` and why the
+  log-vs-cache split explains Phase B's stale preview; schema enforcement (default, the free DQ
+  wall) vs evolution (`mergeSchema`/`overwriteSchema`, opt-in); the V-Order (auto) /
+  OPTIMIZE + VACUUM (manual) split with VACUUM's time-travel hazard; `.collect()` → driver OOM;
+  the ~1 GB partition rule → no partitioning here; MLV (declarative, engine-refreshed) vs
+  notebook aggregate (imperative, arbitrary logic). Medallion + DQ-gate flow diagrammed.
+  **C1.5 🎓 = 6/6 — first perfect check**, both "automatic" distractors rejected. No new
+  misconceptions. M5 (SQL endpoint read-only) and M6 (Delta concurrency) remain open — their
+  live re-tests land at C7 and C4/C5 respectively, not at C1.5. **Next: C2 — build the
+  `energy_lakehouse` package (parsers + DQ module + tests), branch `feature/dq-module`, PR to
+  develop, then `uv build` the wheel for C3.**
