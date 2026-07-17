@@ -180,8 +180,11 @@ you pull it back.
     unacceptable when B7 fires 129 child runs at a WAF-fronted API. Set **Wait on
     completion = ON**, or `Sequential` is meaningless (the loop would fire and move on).
 - After ForEach (On success): **Notebook** activity → `nb_update_watermark` per
-      indicator set to `p_to` — simplest: three parallel notebook activities, one per
-      indicator (explicit beats clever here).
+      indicator set to `p_to`. **Chain them SEQUENTIALLY** — `nb_wm_demanda` →
+      `nb_wm_generacion` → `nb_wm_precios`, each *On success* of the previous. **Do not run
+      them in parallel**: three concurrent `MERGE`s into `bronze.ctl_watermark` throw
+      `ConcurrentAppendException` (Delta optimistic concurrency — see Gotchas 2026-07-17). The
+      first activity depends on `fe_chunks`; the other two chain off their predecessor.
 - Commit (`feat(ingest): month-chunked backfill pipeline`).
 
 ### B6 `[YOU]` Daily pipeline `pl_ingest_daily`
@@ -498,6 +501,41 @@ visible on disk). **Decision for Phase C:** promote this from a throwaway into a
 **landing-integrity assertion** after the backfill / before Silver — count == expected, first
 byte is `{` after BOM-strip, `included` non-empty. It caught the BOM immediately, which is
 exactly the argument for keeping it.
+
+**2026-07-17 — ⛔ THE BACKFILL RUN FAILED: `ConcurrentAppendException` on the watermark update.**
+All 129 Bronze files landed correctly, but the pipeline **run failed** at `nb_wm_generacion`:
+
+> `[DELTA_CONCURRENT_APPEND] ConcurrentAppendException: Files were added to the root of the
+> table by a concurrent update.` (conflicting op: `MERGE`, `isolationLevel: Serializable`)
+
+**Root cause — the guide's own design.** The three watermark activities were wired in parallel
+(all *On success* of `fe_chunks`, none depending on each other), so Fabric ran them concurrently.
+Each does a Delta `MERGE` into the same **unpartitioned** `bronze.ctl_watermark`. Delta's
+optimistic concurrency: all three read version 1, all try to commit version 2 — one wins, the
+other two throw. Delta's unit of concurrency is the **commit/file, not the row**, so "each touches
+a different indicator row" does *not* make it safe without a partition predicate. See M6 in the
+learning log.
+
+**State after the failure** (safe, but wrong — this is the M4 design paying off):
+
+| Indicator | `last_end` | |
+|---|---|---|
+| `precios_mercados` | `2026-07-16T23:59` | won its commit |
+| `demanda_evolucion` | `2022-12-31T23:59` | never updated (still B4 bootstrap) |
+| `generacion_estructura` | *(no row)* | threw the exception |
+
+Bronze is complete; only the bookkeeping under-claims → the next run re-fetches rather than
+gapping. Data was never at risk.
+
+**Fix chosen: serialize** the three activities (`nb_wm_demanda` → `nb_wm_generacion` →
+`nb_wm_precios`). Sequential Delta transactions cannot conflict. Portal-only, applied to **both**
+`pl_backfill_ree` and `pl_ingest_daily`. Alternative considered: one activity upserting all three
+in a single transaction (atomic, 1 Spark start) — rejected as more portal rework for the same
+correctness. Retry was rejected as a band-aid.
+
+**State repaired manually** via `nb_update_watermark` (bootstrap `generacion_estructura`, advance
+`demanda_evolucion` to `2026-07-16T23:59`) rather than re-running the ~1h backfill — the Bronze
+files were already correct and idempotent.
 
 *(append further as encountered)*
 

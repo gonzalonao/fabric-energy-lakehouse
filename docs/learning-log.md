@@ -199,6 +199,40 @@ Questions to run cold at Phase G / end of project. Grows one section per phase.
 8. Draw the three pipelines and their call graph from memory. Which one never reads the
    watermark, and why is that not a bug?
 
+### Phase B — Batch ingestion (cont.): concurrency
+
+9. Three notebook activities each `MERGE` into `bronze.ctl_watermark`, wired in parallel off the
+   ForEach. The backfill's data landed 129/129, but the run **failed**. Why, in Delta terms?
+   (Reach: optimistic concurrency at Serializable isolation — all read the same version, all try
+   to commit the next, one wins, the rest throw `ConcurrentAppendException`.)
+10. The run failed yet Bronze was complete and no data was lost or corrupted — only the watermark
+    table was left under-claiming. Why is that the *safe* failure mode, and which design rule
+    produced it? (Reach: watermark-written-only-after-success + idempotent paths → a failure
+    yields re-fetch pressure, never gaps.)
+11. Two ways to make three writes to one control table safe. Name them and the trade-off.
+    (Reach: serialize the transactions, or batch them into one transaction; parallel blind writes
+    to an unpartitioned Delta table are the anti-pattern.)
+
+## Misconception ledger (cont.)
+
+### M6 — "Independent parallel writes to one Delta table are fine" ⬜ open (2026-07-17)
+
+**Believed (implicit in the build):** three activities each updating a different *row* of
+`bronze.ctl_watermark` can run in parallel safely — they touch different data.
+**Actually:** Delta's unit of concurrency is the **file/commit, not the row**. An unpartitioned
+table is one root; three concurrent `MERGE`s all read version N and race to commit version N+1.
+One wins; the losers throw **`ConcurrentAppendException`** ("Files were added to the root of the
+table by a concurrent update"). Row-level disjointness doesn't help unless Delta can *prove* it —
+which needs a partition predicate the MERGE didn't have.
+**Fix (chosen):** serialize the three writes (sequential transactions never conflict). Alternative:
+one transaction that upserts all rows. Retry is a band-aid, not a fix.
+**Not the usual axis.** Gonzalo's other misses cluster on "assumes the platform automates a manual
+step"; this one is different — a genuine distributed-systems/isolation gap, not a Fabric-seam
+assumption. His Delta instincts are strong on *storage* (V-Order, schema, time travel) but this is
+*concurrency*, a distinct sub-area worth a second look at Phase C (silver writes) and Phase D
+(orchestration, where parallel branches multiply).
+**Re-test at:** Phase C and Phase G.
+
 *(Phase C–G sections appended at each 🎓 checkpoint.)*
 
 ---
