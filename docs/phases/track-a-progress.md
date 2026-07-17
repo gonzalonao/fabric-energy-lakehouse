@@ -8,8 +8,7 @@ guides (`phase-*.md`); steps marked `[Track B]` there don't apply here. Sibling 
 window ends ~2026-07-31.
 **Git:** Fabric ↔ Azure DevOps repo (`develop`, `/fabric`); GitHub canonical via mirror.
 **Status:** 🚧 **Phase C — Transform & DQ in progress** (2026-07-18; C1, C1.5 (🎓 6/6), C2 done).
-Next: **C3** `[YOU]` — create Fabric Environment `env_energy`, upload the wheel
-(`dist/energy_lakehouse-0.1.0-py3-none-any.whl`), publish, set as workspace Spark default.
+Next: **C4** — silver + DQ-gate notebook shells `[YOU]`, then Claude writes both in Git `.py`.
 Phase B ✅ complete (2026-07-17); one outstanding B item: `b9-scheduled-run-green.png` after
 today's 08:00 scheduled run — reminder set.
 Phase A ✅ complete (2026-07-14).
@@ -33,6 +32,7 @@ again on Track B's tenant.
 | `nb_update_watermark` | `e3aee25b-ed44-a622-491c-14d6c55fa8b3` | `pl_backfill_ree` ×3 (`notebookId`) |
 | `conn_ree_apidatos` (REST) | `3cc793f5-7a71-4133-8102-f88cadcd4458` | `pl_ingest_ree` (`externalReferences.connection`) |
 | `conn_fabric_pipelines` | `7409c7aa-34fa-4e2a-98a6-f983c750e3f3` | `pl_backfill_ree` → `inv_ingest` |
+| `env_energy` (Environment) | `3b5f385e-8165-b78f-4b3a-72bf5981e359` (`logicalId`) | workspace Spark default; notebooks (C4+) |
 
 **Three things this table is trying to stop:**
 
@@ -150,7 +150,12 @@ Done criteria:
       captured REE fixtures**; ruff + `mypy --strict` + pytest all green;
       [PR #4](https://github.com/gonzalonao/fabric-energy-lakehouse/pull/4) → `2c2ea00`.
       Wheel: `dist/energy_lakehouse-0.1.0-py3-none-any.whl` (gitignored) for C3)*
-- [ ] C3 — Fabric environment `env_energy` with the wheel
+- [x] C3 — Fabric environment `env_energy` with the wheel *(created, wheel uploaded as custom
+      library, published, set as workspace Spark default. **Fabric serialized the `.whl` binary
+      into Git** under `fabric/env_energy.Environment/Libraries/CustomLibraries/` (14 KB) —
+      so the Environment is reproducible/deployable by fabric-cicd in Phase F. Commit `f08e448`,
+      mirrored to origin (0/0). No `.gitignore` conflict — `*.whl` is not globally ignored, only
+      `dist/`)*
 - [ ] C4 — silver + DQ-gate notebooks; units confirmed
 - [ ] C5 — corrupted-file test (fail → clean → green)
 - [ ] C6 — gold star schema + MLVs
@@ -470,3 +475,13 @@ Scores, misconceptions and the drill bank live in **[`docs/learning-log.md`](../
   [PR #4](https://github.com/gonzalonao/fabric-energy-lakehouse/pull/4) → `2c2ea00`, mirrored
   to devops (0/0). **Next: C3 `[YOU]` — Fabric Environment `env_energy` + wheel upload + publish
   + set workspace Spark default.**
+- **2026-07-18 — C3 done: `env_energy` published, wheel uploaded, set as workspace Spark
+  default.** Fabric committed the Environment (`f08e448`): `.platform`
+  (logicalId `3b5f385e-8165-b78f-4b3a-72bf5981e359`, now in the Phase F IDs table),
+  `Setting/Sparkcompute.yml`, and — notably — the **`.whl` binary itself** under
+  `Libraries/CustomLibraries/` (14 KB in Git). That makes the Environment fully reproducible
+  from source and deployable by fabric-cicd in Phase F, at the cost of a small tracked binary
+  (acceptable; `*.whl` isn't globally gitignored, only `dist/`). Fast-forwarded + mirrored to
+  origin (0/0). Gonzalo asked to be **proactively reminded to capture evidence screenshots** —
+  saved as standing feedback. **Next: C4 — `[YOU]` create shells `silver/nb_bronze_to_silver`
+  + `orchestration/nb_dq_gate`; then Claude writes both on `feature/silver-transform`.**
