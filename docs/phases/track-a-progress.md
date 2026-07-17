@@ -97,7 +97,11 @@ Done criteria:
 - [x] B5 — backfill pipeline `pl_backfill_ree` *(commit `d81de3d`; new **Invoke pipeline**
       activity + `conn_fabric_pipelines` — see guide Gotchas. Review caught `nb_chunks`'s base
       parameters serialized as empty literals → fix commit pending)*
-- [ ] B6 — daily pipeline `pl_ingest_daily`
+- [x] B6 — daily pipeline `pl_ingest_daily` *(`5af9018`; **redesigned** — Lookup on the SQL
+      endpoint proved unusable, replaced by `nb_gen_chunks` in `daily` mode
+      ([PR #3](https://github.com/gonzalonao/fabric-energy-lakehouse/pull/3), `25a5f9a`).
+      `nb_gen_backfill_chunks` retired `48be9de`. Both pipelines reviewed — structurally
+      identical, all checks pass)*
 - [ ] B7 — backfill run 2023-01 → now
 - [ ] B8 — incremental + idempotent + kill-test proofs
 - [ ] B9 — daily schedule active
@@ -341,4 +345,23 @@ Scores, misconceptions and the drill bank live in **[`docs/learning-log.md`](../
   `ValueError: p_from must be a non-empty YYYY-MM-DD date`. That's the empty-defaults design
   working (loud failure, not a silent wrong range), but it needs fixing before B7. Fix in flight.
   All dev item/connection GUIDs collected into the table above rather than left for F2.
-  **Next: fix `nb_chunks` params, then B6 — daily pipeline `pl_ingest_daily`.**
+  `nb_chunks` params fixed (`b7a9eb1`).
+- 2026-07-16/17 — B6 done, but **redesigned mid-build**. The planned Lookup on the SQL analytics
+  endpoint is unusable: T-SQL Query (Preview) needs a connection kind the OneLake catalog picker
+  can't produce, and the connection's only auth kind is OAuth 2.0, so the error asking us to
+  change it has no remedy. Three attempts, then stopped (guide Gotchas).
+  **Replaced with `nb_gen_chunks`** — one notebook, `p_mode` = `backfill`|`daily`
+  ([PR #3](https://github.com/gonzalonao/fabric-energy-lakehouse/pull/3), `25a5f9a`) — superseding
+  `nb_gen_backfill_chunks` (retired `48be9de`). Better on the merits, not a workaround: no third
+  connection, `INDICATORS` + `month_windows` in exactly one place, both pipelines the same shape,
+  logic testable in Python. The Spark-cost argument that favoured the Lookup was **wrong** —
+  `nb_update_watermark` is a notebook, so a Spark start was always in the daily path. M5 still
+  gets demonstrated at **C7** (already planned).
+  **This also fixed a latent bug in the specified design:** daily issued one request for
+  `watermark → yesterday`, so any outage beyond a calendar month yields a window the API rejects —
+  and since a failed run never advances the watermark, daily could never catch up unaided.
+  Verified locally: 3-month outage → 12 chunks, none crossing a month; same-day re-run → 0 chunks,
+  no error; lagging indicator resumes from its own watermark.
+  Both pipelines reviewed post-commit: `p_mode` correct on each, `p_from`/`p_to` expressions
+  survived the notebook swap, Sequential ✅, connections present on both `inv_ingest`, watermarks
+  gated on `Succeeded`. **Next: B7 — run the backfill (129 chunks; the WAF question).**
