@@ -156,7 +156,14 @@ Done criteria:
       so the Environment is reproducible/deployable by fabric-cicd in Phase F. Commit `f08e448`,
       mirrored to origin (0/0). No `.gitignore` conflict — `*.whl` is not globally ignored, only
       `dist/`)*
-- [ ] C4 — silver + DQ-gate notebooks; units confirmed
+- [~] C4 — silver + DQ-gate notebooks; units confirmed *(both notebooks **written**:
+      `nb_bronze_to_silver` (p_indicator; glob→parse→quarantine + natural-key MERGE→OPTIMIZE)
+      and `nb_dq_gate` (p_stage; thin wrapper on `run_gate`) —
+      [PR #5](https://github.com/gonzalonao/fabric-energy-lakehouse/pull/5). Field order/types
+      verified vs Silver schemas locally; both compile. **Remaining `[YOU]`: Update all → run
+      `nb_bronze_to_silver` ×3 indicators → verify tables + confirm units → run `nb_dq_gate`
+      (silver) green.** Mirror note: squash-merge diverged origin/devops; reconciled with a
+      merge commit (no force-push), both remotes 0/0)*
 - [ ] C5 — corrupted-file test (fail → clean → green)
 - [ ] C6 — gold star schema + MLVs
 - [ ] C7 — SQL proofs from the endpoint
