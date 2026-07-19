@@ -7,12 +7,10 @@ guides (`phase-*.md`); steps marked `[Track B]` there don't apply here. Sibling 
 **Tenant/capacity:** ESESA/UCAM student tenant · Fabric trial capacity ·
 window ends ~2026-07-31.
 **Git:** Fabric ↔ Azure DevOps repo (`develop`, `/fabric`); GitHub canonical via mirror.
-**Status:** 🚧 **Phase C — Transform & DQ in progress** (C1, C1.5 🎓 6/6, C2, C3 done; C4
-silver loaded, DQ fix 0.2.0 shipped — awaiting env re-publish + green-gate screenshot).
-Phase B fully closed: `b9-scheduled-run-green.png` captured (two green scheduled runs, 07-18/07-19).
-Next: **C4** — silver + DQ-gate notebook shells `[YOU]`, then Claude writes both in Git `.py`.
-Phase B ✅ complete (2026-07-17); one outstanding B item: `b9-scheduled-run-green.png` after
-today's 08:00 scheduled run — reminder set.
+**Status:** 🚧 **Phase C — Transform & DQ in progress** (C1, C1.5 🎓 6/6, C2, C3, **C4 done**
+— silver loaded, DQ fix 0.2.0 published, gate green 20/20 PASS, evidence captured).
+Next: **C5** — corrupted-file test (fail → clean → green).
+Phase B ✅ complete (2026-07-17); fully closed 2026-07-19 (`b9-scheduled-run-green.png`).
 Phase A ✅ complete (2026-07-14).
 **DevOps:** org `glopezc443` · project/repo `fabric-energy-lakehouse` · remote `devops`
 (`https://dev.azure.com/glopezc443/fabric-energy-lakehouse/_git/fabric-energy-lakehouse`).
@@ -158,7 +156,7 @@ Done criteria:
       so the Environment is reproducible/deployable by fabric-cicd in Phase F. Commit `f08e448`,
       mirrored to origin (0/0). No `.gitignore` conflict — `*.whl` is not globally ignored, only
       `dist/`)*
-- [~] C4 — silver + DQ-gate notebooks; units confirmed *(both notebooks **written**:
+- [x] C4 — silver + DQ-gate notebooks; units confirmed *(both notebooks **written**:
       `nb_bronze_to_silver` (p_indicator; glob→parse→quarantine + natural-key MERGE→OPTIMIZE)
       and `nb_dq_gate` (p_stage; thin wrapper on `run_gate`) —
       [PR #5](https://github.com/gonzalonao/fabric-energy-lakehouse/pull/5). Field order/types
@@ -168,9 +166,10 @@ Done criteria:
       merge commit (no force-push), both remotes 0/0. Silver loaded ✅ (3 tables, units
       confirmed → `docs/data-dictionary.md`). **DQ finding (2026-07-19):** first gate run
       flagged 8 negative generation rows — all `Carbón` (thermal self-consumption, real REE
-      data). Fixed with a renewable-aware bound, wheel **0.2.0** (`48b0ff3`). **Remaining
-      `[YOU]`: re-upload 0.2.0 wheel + re-publish `env_energy`, re-run `nb_dq_gate` → green +
-      `c4-dq-gate-green.png`.)*
+      data). Fixed with a renewable-aware bound, wheel **0.2.0** (`48b0ff3`). **Closed
+      2026-07-19:** 0.2.0 re-published to `env_energy` (Fabric commit `59441b2` — wheel binary
+      renamed in Git), `nb_dq_gate` green — `ops.dq_results` latest run **20/20 PASS** —
+      `c4-dq-gate-green.png` captured)*
 - [ ] C5 — corrupted-file test (fail → clean → green)
 - [ ] C6 — gold star schema + MLVs
 - [ ] C7 — SQL proofs from the endpoint
@@ -499,3 +498,17 @@ Scores, misconceptions and the drill bank live in **[`docs/learning-log.md`](../
   origin (0/0). Gonzalo asked to be **proactively reminded to capture evidence screenshots** —
   saved as standing feedback. **Next: C4 — `[YOU]` create shells `silver/nb_bronze_to_silver`
   + `orchestration/nb_dq_gate`; then Claude writes both on `feature/silver-transform`.**
+- **2026-07-19 — C4 closed: the gate caught real data, the fix shipped, the gate went green.**
+  The arc in one line: first `nb_dq_gate` run **failed** on 8 negative `silver.generation_daily`
+  rows → diagnosis showed all 8 are `Carbón` (thermal self-consumption, legitimate REE data,
+  min −120 MWh across 3.5 years) → fix as a **versioned wheel release** (0.2.0, `48b0ff3`:
+  renewable-aware bound `(is_renewable AND value<0) OR value<-1000`, demand kept strictly `>0`
+  as the C5 signal, policy locked by two new tests) → wheel re-uploaded + `env_energy`
+  re-published (Fabric commit `59441b2`, the `.whl` binary renamed 0.1.0→0.2.0 in Git) →
+  re-run green: `ops.dq_results` latest `run_ts` = **20/20 PASS** (`c4-dq-gate-green.png`,
+  with the status profile panel proving `Unique: 1`). Also today: Phase B fully closed
+  (`b9-scheduled-run-green.png`; **Run kind** column, not "Submitted by", is the scheduled
+  proof) and `docs/data-dictionary.md` added (units confirmed by profiling: MWh / MWh / €/MWh).
+  The thin-notebook trade-off showed its cost knowingly: a threshold change = wheel rebuild +
+  env re-publish (~10 min), the price of DQ policy being unit-tested code instead of a cell
+  edit. **Next: C5 — corrupted-file test (quarantine + gate FAIL + restore).**
