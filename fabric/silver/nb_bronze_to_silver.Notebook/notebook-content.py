@@ -121,7 +121,10 @@ def read_raw_payloads(indicator):
     the driver to hand to the pure Python parser is safe.
     """
     glob = f"Files/raw/{indicator}/*/*/*.json"
-    frame = spark.read.option("wholetext", True).text(glob)
+    # wholetext must be text()'s keyword: .option("wholetext", True) is silently
+    # clobbered by text()'s own wholetext=False default. Latent while every JsonSink
+    # file was single-line; C5's first multi-line file split into per-line rows.
+    frame = spark.read.text(glob, wholetext=True)
     return [json.loads(row["value"].lstrip(BOM)) for row in frame.collect()]
 
 

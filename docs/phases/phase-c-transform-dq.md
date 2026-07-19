@@ -225,6 +225,22 @@ cleanly without it, and `dq/gate.py` is the only Spark-touching module (import i
 `energy_lakehouse.indicators` — collapses in C4 once `env_energy` lets the notebook import the
 wheel.
 
+### C5 — the corrupted-file test caught a bug in the *reader*, not just the data (2026-07-19)
+
+The injected corrupt file crashed `nb_bronze_to_silver` with a `JSONDecodeError` **before any
+DQ mechanism ran** — the diagnostic scan showed the file arriving **split into one row per
+line**. Root cause: a PySpark trap. `spark.read.option("wholetext", True).text(glob)` does
+**not** apply wholetext — `text()` has its own `wholetext=False` keyword default and PySpark
+writes every non-None method parameter over previously set options, silently clobbering it.
+Correct form: `spark.read.text(glob, wholetext=True)`.
+
+**Why it survived C4:** Fabric's JsonSink writes every Bronze file as a single line, so
+line-mode and wholetext reads are indistinguishable — the bug was latent until the first
+multi-line file existed, and the first multi-line file was C5's pretty-printed corrupt
+fixture. Exactly the kind of implicit-contract dependency the corrupted-file test exists to
+surface: the reader's correctness was resting on a *formatting habit of the producer*, not on
+the code. Fixed in the same session; the multi-line fixture doubles as the regression proof.
+
 ## Session log
 
 *Moved to the per-track trackers ([A](track-a-progress.md) / [B](track-b-progress.md)) — phase-specific gotchas stay above.*
