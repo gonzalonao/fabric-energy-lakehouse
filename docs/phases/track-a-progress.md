@@ -7,9 +7,9 @@ guides (`phase-*.md`); steps marked `[Track B]` there don't apply here. Sibling 
 **Tenant/capacity:** ESESA/UCAM student tenant · Fabric trial capacity ·
 window ends ~2026-07-31.
 **Git:** Fabric ↔ Azure DevOps repo (`develop`, `/fabric`); GitHub canonical via mirror.
-**Status:** 🚧 **Phase C — Transform & DQ in progress** (C1, C1.5 🎓 6/6, C2, C3, **C4 done**
-— silver loaded, DQ fix 0.2.0 published, gate green 20/20 PASS, evidence captured).
-Next: **C5** — corrupted-file test (fail → clean → green).
+**Status:** 🚧 **Phase C — Transform & DQ in progress** (C1–C5 done; both DQ done-criteria
+met: silver typed/deduped/UTC + quarantine works, corrupted file fails the run with a clear
+DQ error). Next: **C6** — gold star schema + MLVs.
 Phase B ✅ complete (2026-07-17); fully closed 2026-07-19 (`b9-scheduled-run-green.png`).
 Phase A ✅ complete (2026-07-14).
 **DevOps:** org `glopezc443` · project/repo `fabric-energy-lakehouse` · remote `devops`
@@ -170,15 +170,24 @@ Done criteria:
       2026-07-19:** 0.2.0 re-published to `env_energy` (Fabric commit `59441b2` — wheel binary
       renamed in Git), `nb_dq_gate` green — `ops.dq_results` latest run **20/20 PASS** —
       `c4-dq-gate-green.png` captured)*
-- [ ] C5 — corrupted-file test (fail → clean → green)
+- [x] C5 — corrupted-file test (fail → clean → green) *(full arc proven 2026-07-19: corrupt
+      fixture (3 negatives + null value + missing datetime) → silver green with
+      `1267 rows, 2 quarantined` → gate `DQGateError … 3 rows outside [0.0, inf]` with the
+      FAIL row in `ops.dq_results` → `pl_ingest_ree` re-run (Jan 2024) → silver
+      `1295 rows, 0 quarantined` → gate green, 3 dates healed. **Bonus finding:** the test
+      caught a real reader bug — `wholetext` silently clobbered by `text()`'s keyword default,
+      latent while all JsonSink files were single-line; fixed `cc6b622` (guide Gotchas).
+      3 screenshots cataloged)*
 - [ ] C6 — gold star schema + MLVs
 - [ ] C7 — SQL proofs from the endpoint
 - [ ] C8 — wrap-up (README MLV paragraph, data dictionary, evidence)
 - [ ] C9 — 📣 engineering narrative in portfolio entry
 
 Done criteria:
-- [ ] Silver tables typed/deduped/UTC; quarantine works
-- [ ] Corrupted Bronze file fails the run with clear DQ error
+- [x] Silver tables typed/deduped/UTC; quarantine works *(C4 + C5: `c4-silver-tables.png`,
+      `c5-quarantine-rows.png`)*
+- [x] Corrupted Bronze file fails the run with clear DQ error *(C5: `c5-dq-gate-fail.png` —
+      rule, table, column and row count in the message)*
 - [ ] Gold star schema built (3 dims + 3 facts)
 - [ ] ≥1 MLV + honest README paragraph
 - [ ] Gold queries from SQL endpoint (`.sql` proofs)
@@ -512,3 +521,24 @@ Scores, misconceptions and the drill bank live in **[`docs/learning-log.md`](../
   The thin-notebook trade-off showed its cost knowingly: a threshold change = wheel rebuild +
   env re-publish (~10 min), the price of DQ policy being unit-tested code instead of a cell
   edit. **Next: C5 — corrupted-file test (quarantine + gate FAIL + restore).**
+- **2026-07-19 (later) — C5 complete: fail → clean → green, plus a bug the test was born to
+  catch.** The corrupt fixture (3 negative demand values, one `null` value, one record missing
+  `datetime`, committed at `docs/evidence/phase-c/corrupt/`) first **crashed the silver
+  notebook outright** — diagnosis showed the file arriving split per-line: `.option("wholetext",
+  True).text(glob)` never applied, because `text()`'s own `wholetext=False` keyword default
+  silently clobbers the option. Latent through all of C4 (single-line JsonSink files read
+  identically either way); the first multi-line file ever to exist exposed it. Fixed
+  (`cc6b622`, `spark.read.text(glob, wholetext=True)`), Gotcha recorded. Then the designed arc
+  ran clean: silver green `1267 rows, 2 quarantined` (structural garbage preserved with
+  machine-readable reasons; run survives) → gate red `DQGateError … silver.demand_daily
+  value_range: 3 rows outside [0.0, inf]` with the FAIL row queryable in `ops.dq_results`
+  before the raise → `pl_ingest_ree` re-run for Jan 2024 (deterministic path + overwrite =
+  the recovery mechanism, B8c's property reused) → silver `1295 rows, 0 quarantined`, 3 dates
+  healed to real values, gate green. Quarantine rows remain as append-only audit trail.
+  3 screenshots cataloged. **M6 re-tested (first time asked as a question) and missed by
+  overcorrection** — predicted B7-style failure for parallel appends to a shared quarantine
+  table; correction = the Delta conflict matrix (MERGE reads a snapshot, blind appends don't;
+  see learning log). Prediction errata recorded: Claude's per-file row-count predictions
+  ("3 rows", "31 rows") were wrong — the notebook re-parses the whole indicator every run
+  (full-reparse idempotent design), so counts are whole-history. **Next: C6 — gold star
+  schema + MLVs (shells `[YOU]`, then code `[CLAUDE]`).**
