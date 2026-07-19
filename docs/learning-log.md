@@ -31,6 +31,7 @@ answer, not just recognize it.
 | 2026-07-14 | B1.5 — ingestion & watermarks (pre-build) | A / Phase B | 4/6 | M4 + M5 opened. Correct: Copy-vs-Web, watermark-after-success, ForEach sequential, the `Generación total` trap |
 | 2026-07-17 | M4 re-test (right after running the B8c kill-test) | A / Phase B | 1/1 | **M4 closed** — rejected "watermark resume" with the original miss on the table |
 | 2026-07-18 | C1.5 — Delta, DQ gate & MLVs (pre-build) | A / Phase C | **6/6** | First perfect check. Beat the "automatic" trap twice head-on (V-Order-only; gate-doesn't-auto-retry). No new misconceptions |
+| 2026-07-19 | M6 re-test (at C5, before the corrupted-file run) | A / Phase C | 0/1 | **M6 still open — overcorrected**: predicted the shared quarantine appends would fail like B7. The miss moved from "rows are disjoint → safe" to "same table → always fails"; correction = the conflict matrix (see M6). Rejected the "automatic" distractor |
 
 ---
 
@@ -246,6 +247,15 @@ Questions to run cold at Phase G / end of project. Grows one section per phase.
    arbitrary Python, custom schedules, or where MLV preview limits bite.)
 8. Schema enforcement vs schema evolution — which is default, and how do you opt into the other?
    (Reach: enforcement default; `mergeSchema` to add columns, `overwriteSchema` for full rebuilds.)
+9. Three notebooks run in parallel: each MERGEs its own silver table, all append to one shared
+   quarantine table. Safe or not, and why? (M6 — reach: the conflict matrix. MERGE reads → its
+   snapshot can be invalidated; a blind append reads nothing → append+append never conflicts;
+   different tables = different Delta logs. B7 failed because it was MERGE×3 on *one* table.)
+10. A demand value of `-4200` and a value of `null` arrive in the same Bronze file. One lands in
+    `silver.quarantine`, the other lands in `silver.demand_daily` and later kills the DQ gate.
+    Which is which, and why is that split deliberate? (Reach: structural vs semantic — a null
+    can't even become a typed row (quarantine, run continues); a negative parses fine and only a
+    *policy* can judge it (gate, run fails). Two failure modes, two mechanisms, two audit trails.)
 
 ## Misconception ledger (cont.)
 
@@ -266,6 +276,24 @@ assumption. His Delta instincts are strong on *storage* (V-Order, schema, time t
 *concurrency*, a distinct sub-area worth a second look at Phase C (silver writes) and Phase D
 (orchestration, where parallel branches multiply).
 **Re-test at:** Phase C and Phase G.
+
+**Re-test 2026-07-19 (C5): still open — the miss inverted.** Scenario: three parallel
+`nb_bronze_to_silver` runs, each MERGEing its *own* silver table but all appending to the shared
+`silver.quarantine`. He predicted a B7-style `ConcurrentAppendException` on the quarantine
+appends — an **overcorrection**: from "different rows → safe" (original) to "same table →
+always fails" (now). Both miss the actual rule, the **conflict matrix**:
+
+> A conflict needs **the same table AND at least one writer that also *read* it.**
+> - **MERGE reads first** (its commit declares the snapshot version it read); a concurrent
+>   commit invalidates that snapshot → `ConcurrentAppendException`. B7 = 3 MERGEs, 1 table.
+> - **A blind append reads nothing** — no snapshot to invalidate. Concurrent appends to one
+>   table all succeed (N+1, N+2, N+3). Append+append is the always-safe concurrent pair.
+> - MERGEs into *different* tables are different Delta logs — no interaction at all.
+
+So the parallel ×3 scenario is safe by construction — and `silver.quarantine` being
+**append-only** is precisely what makes sharing it across writers safe. Positive note: he
+rejected the "Fabric serializes them automatically" distractor.
+**Re-test at:** Phase D (parallel orchestration branches make it concrete) and Phase G.
 
 *(Phase C–G sections appended at each 🎓 checkpoint.)*
 
