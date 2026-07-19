@@ -7,7 +7,9 @@ guides (`phase-*.md`); steps marked `[Track B]` there don't apply here. Sibling 
 **Tenant/capacity:** ESESA/UCAM student tenant · Fabric trial capacity ·
 window ends ~2026-07-31.
 **Git:** Fabric ↔ Azure DevOps repo (`develop`, `/fabric`); GitHub canonical via mirror.
-**Status:** 🚧 **Phase C — Transform & DQ in progress** (2026-07-18; C1, C1.5 (🎓 6/6), C2 done).
+**Status:** 🚧 **Phase C — Transform & DQ in progress** (C1, C1.5 🎓 6/6, C2, C3 done; C4
+silver loaded, DQ fix 0.2.0 shipped — awaiting env re-publish + green-gate screenshot).
+Phase B fully closed: `b9-scheduled-run-green.png` captured (two green scheduled runs, 07-18/07-19).
 Next: **C4** — silver + DQ-gate notebook shells `[YOU]`, then Claude writes both in Git `.py`.
 Phase B ✅ complete (2026-07-17); one outstanding B item: `b9-scheduled-run-green.png` after
 today's 08:00 scheduled run — reminder set.
