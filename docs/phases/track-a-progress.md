@@ -163,7 +163,12 @@ Done criteria:
       verified vs Silver schemas locally; both compile. **Remaining `[YOU]`: Update all → run
       `nb_bronze_to_silver` ×3 indicators → verify tables + confirm units → run `nb_dq_gate`
       (silver) green.** Mirror note: squash-merge diverged origin/devops; reconciled with a
-      merge commit (no force-push), both remotes 0/0)*
+      merge commit (no force-push), both remotes 0/0. Silver loaded ✅ (3 tables, units
+      confirmed → `docs/data-dictionary.md`). **DQ finding (2026-07-19):** first gate run
+      flagged 8 negative generation rows — all `Carbón` (thermal self-consumption, real REE
+      data). Fixed with a renewable-aware bound, wheel **0.2.0** (`48b0ff3`). **Remaining
+      `[YOU]`: re-upload 0.2.0 wheel + re-publish `env_energy`, re-run `nb_dq_gate` → green +
+      `c4-dq-gate-green.png`.)*
 - [ ] C5 — corrupted-file test (fail → clean → green)
 - [ ] C6 — gold star schema + MLVs
 - [ ] C7 — SQL proofs from the endpoint
