@@ -28,10 +28,16 @@ OPS_SCHEMA = "ops"
 STAGE_SILVER = "silver"
 VALID_STAGES = (STAGE_SILVER,)
 
-# Value-range bounds (see the C2 check config). Demand must be positive; generation
-# non-negative; the spot/PVPC price sits in a wide but bounded band in €/MWh.
+# Value-range bounds (see the C2 check config). Demand must be strictly positive; the
+# spot/PVPC price sits in a wide but bounded band in €/MWh.
 PRICE_MIN = -500.0
 PRICE_MAX = 4000.0
+# Generation: a renewable technology can never be physically negative, so any negative
+# renewable value is an error. A thermal (non-renewable) technology can dip slightly
+# negative on near-idle days (station self-consumption net of output) — real REE data,
+# observed only for coal at min ~-120 MWh over 3.5 years. We allow that small tolerance
+# for non-renewables and only treat a gross negative as corruption.
+GENERATION_MIN = -1000.0
 FRESHNESS_MAX_LAG_DAYS = 1
 
 _ROW_COUNT_CHECK = "row_count"
@@ -57,7 +63,13 @@ _SILVER_TABLES = (
 
 _SILVER_RANGE = {
     "silver.demand_daily": RangeCheck("value", 0.0, float("inf"), "value <= 0"),
-    "silver.generation_daily": RangeCheck("value", 0.0, float("inf"), "value < 0"),
+    "silver.generation_daily": RangeCheck(
+        "value",
+        GENERATION_MIN,
+        float("inf"),
+        # Renewables strict; thermal tolerant of a small self-consumption negative.
+        f"(is_renewable AND value < 0) OR value < {GENERATION_MIN}",
+    ),
     "silver.price_hourly": RangeCheck(
         "value", PRICE_MIN, PRICE_MAX, f"value < {PRICE_MIN} OR value > {PRICE_MAX}"
     ),

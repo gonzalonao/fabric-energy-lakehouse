@@ -7,4 +7,4 @@ plain numeric inputs into :class:`~energy_lakehouse.models.DQResult` verdicts. O
 This keeps the transformation and DQ logic unit-testable locally, off the cluster.
 """
 
-__version__ = "0.1.0"
+__version__ = "0.2.0"

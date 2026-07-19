@@ -194,6 +194,29 @@ guess before, now verified — and each reshapes Silver/Gold:
    by the DQ gate**. This is exactly the C5 corrupted-file split (truncated record → quarantine;
    negative values → gate FAIL), designed in rather than discovered there.
 
+### C4 — the DQ gate caught a real data property on first contact (2026-07-19)
+
+The first `nb_dq_gate` (silver) run **failed**: `silver.generation_daily.value value_range:
+8 rows outside [0.0, inf]`. Investigation (Q1 profiling query) showed the negatives are
+isolated to **`Carbón`** (coal, non-renewable): 8 days over 3.5 years, min −120 MWh, avg −107,
+against a 10⁴–10⁵ scale — the signature of **thermal station self-consumption** (a plant's net
+daily output dipping slightly below zero on near-idle days). Legitimate REE data, not
+corruption. This is the gate working as designed — it surfaced a real characteristic before it
+reached Gold.
+
+**Fix (data-driven, renewable-aware), wheel `0.1.0` → `0.2.0`:** renewables can't be
+physically negative, so the rule flags *any* negative renewable value **and** any generation
+below −1000 MWh (gross corruption), while tolerating small thermal negatives:
+`(is_renewable AND value < 0) OR value < -1000`. Demand stays strict `> 0` (the signal C5
+injects) and price stays `[-500, 4000]`. Documented in `docs/data-dictionary.md`.
+
+**Profiling confirmations from the same runs:** demand 1295 days / generation 19,412 rows /
+price 102,763 rows over 2023-01 → 2026-07; the UTC shift is visible (price min date
+`2022-12-31` = `2023-01-01T00:00+01:00`); and the **grain split is exact** — spot is 60-min
+until 2024-12-31 then 15-min from 2025-01-01 (54,140 quarter-hour rows), PVPC hourly
+throughout. Every wheel change = version bump + re-upload + re-publish `env_energy` (~10 min),
+so tuning is batched.
+
 **Packaging note.** `ruff` is scoped to `src/`+`tests/` (`extend-exclude = ["fabric"]`) because
 the serialized notebooks have mid-file imports and a runtime-injected `spark` — they are not
 plain modules. `pyspark` is **not** a wheel dependency (Fabric provides it); the package imports

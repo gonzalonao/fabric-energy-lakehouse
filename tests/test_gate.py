@@ -3,6 +3,8 @@ from __future__ import annotations
 import pytest
 
 from energy_lakehouse.dq.gate import (
+    _SILVER_RANGE,
+    GENERATION_MIN,
     DQGateError,
     failures,
     validate_stage,
@@ -45,3 +47,16 @@ def test_dq_gate_error_summarizes_every_failure() -> None:
     assert "silver.demand_daily" in str(err)
     assert "value_range" in str(err)
     assert "1 check(s)" in str(err)
+
+
+def test_demand_range_stays_strictly_positive() -> None:
+    # Demand must be > 0 — the signal the C5 corrupted-file test injects.
+    assert _SILVER_RANGE["silver.demand_daily"].bad_row_sql == "value <= 0"
+
+
+def test_generation_range_is_renewable_aware() -> None:
+    # Renewables can't be negative; thermal tolerates a small self-consumption negative.
+    rng = _SILVER_RANGE["silver.generation_daily"]
+    assert rng.low == GENERATION_MIN
+    assert "is_renewable AND value < 0" in rng.bad_row_sql
+    assert f"value < {GENERATION_MIN}" in rng.bad_row_sql
