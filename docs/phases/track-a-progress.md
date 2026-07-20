@@ -7,9 +7,9 @@ guides (`phase-*.md`); steps marked `[Track B]` there don't apply here. Sibling 
 **Tenant/capacity:** ESESA/UCAM student tenant · Fabric trial capacity ·
 window ends ~2026-07-31.
 **Git:** Fabric ↔ Azure DevOps repo (`develop`, `/fabric`); GitHub canonical via mirror.
-**Status:** 🚧 **Phase C — Transform & DQ in progress** (C1–C5 done; both DQ done-criteria
-met: silver typed/deduped/UTC + quarantine works, corrupted file fails the run with a clear
-DQ error). Next: **C6** — gold star schema + MLVs.
+**Status:** 🚧 **Phase C — Transform & DQ in progress** (C1–C6 done; gold star schema built
+— 3 dims + 3 facts + 2 MLVs, all counts verified). Next: **C7** — SQL proofs from the
+analytics endpoint (M5 live re-test).
 Phase B ✅ complete (2026-07-17); fully closed 2026-07-19 (`b9-scheduled-run-green.png`).
 Phase A ✅ complete (2026-07-14).
 **DevOps:** org `glopezc443` · project/repo `fabric-energy-lakehouse` · remote `devops`
@@ -178,7 +178,14 @@ Done criteria:
       caught a real reader bug — `wholetext` silently clobbered by `text()`'s keyword default,
       latent while all JsonSink files were single-line; fixed `cc6b622` (guide Gotchas).
       3 screenshots cataloged)*
-- [ ] C6 — gold star schema + MLVs
+- [x] C6 — gold star schema + MLVs *(shells from Fabric (`91e8b0e`, `409bae3`); code via
+      [PR #6](https://github.com/gonzalonao/fabric-energy-lakehouse/pull/6) → `ffe760d`:
+      `nb_gold_build` full atomic rebuild — natural keys, `overwriteSchema`, `dim_indicator`
+      imports the wheel's `INDICATORS` (C2 duplication collapsed), price fact carries a
+      civil-Madrid `date` — and `nb_gold_mlv` declares 2 engine-refreshed MLVs
+      (`IF NOT EXISTS`). Both ran green 2026-07-20, all counts as predicted (dim_date 1826,
+      dim_technology 15, dim_indicator 3, facts 1295/19412/102763); 6 tables + 2 MLVs
+      verified — `c6-gold-tables.png`)*
 - [ ] C7 — SQL proofs from the endpoint
 - [ ] C8 — wrap-up (README MLV paragraph, data dictionary, evidence)
 - [ ] C9 — 📣 engineering narrative in portfolio entry
@@ -188,8 +195,9 @@ Done criteria:
       `c5-quarantine-rows.png`)*
 - [x] Corrupted Bronze file fails the run with clear DQ error *(C5: `c5-dq-gate-fail.png` —
       rule, table, column and row count in the message)*
-- [ ] Gold star schema built (3 dims + 3 facts)
-- [ ] ≥1 MLV + honest README paragraph
+- [x] Gold star schema built (3 dims + 3 facts) *(C6: `c6-gold-tables.png`, counts verified)*
+- [~] ≥1 MLV + honest README paragraph *(2 MLVs declared and visible; README paragraph due
+      at C8)*
 - [ ] Gold queries from SQL endpoint (`.sql` proofs)
 
 ## Phase D — Orchestration · [guide](phase-d-orchestration.md) · ⬜
@@ -542,3 +550,17 @@ Scores, misconceptions and the drill bank live in **[`docs/learning-log.md`](../
   ("3 rows", "31 rows") were wrong — the notebook re-parses the whole indicator every run
   (full-reparse idempotent design), so counts are whole-history. **Next: C6 — gold star
   schema + MLVs (shells `[YOU]`, then code `[CLAUDE]`).**
+- **2026-07-20 — C6 done: the Gold layer exists and the whole medallion is on screen.**
+  Shells committed from Fabric (came in two commits, `91e8b0e` + `409bae3` — the second
+  notebook missed the first commit's tick); code on `feature/gold-star-schema` via
+  [PR #6](https://github.com/gonzalonao/fabric-energy-lakehouse/pull/6) (`ffe760d`).
+  Design calls recorded in the PR: full atomic rebuild (no MERGE — gold runs downstream of a
+  green gate and is pure derivation), natural keys over surrogates (scale + Direct Lake),
+  `overwriteSchema` deliberate (gold's schema follows the code — C1's evolution lesson
+  applied), `dim_indicator` built from the wheel's `INDICATORS` (the C2 duplication finally
+  collapsed), price fact carries a civil-Madrid `date` column so daily joins line up across
+  facts, and the MLVs' plain `AVG` argued grain-safe (no (series, month) mixes row weights;
+  the spot cutover is exactly at 2025-01-01). Both notebooks ran green first try; every
+  predicted count matched (dim_date 1826, dim_technology 15, dim_indicator 3, facts
+  1295/19412/102763). `c6-gold-tables.png` shows all five schema nodes with gold's 8 objects.
+  **Next: C7 — SQL proofs from the analytics endpoint; M5's live re-test happens there.**
