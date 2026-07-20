@@ -203,45 +203,26 @@
         "name": "alert_on_fail",
         "dependsOn": [
           {
-            "activity": "inv_daily_ingest",
-            "dependencyConditions": [
-              "Failed"
-            ]
-          },
-          {
-            "activity": "nb_silver_demanda",
-            "dependencyConditions": [
-              "Failed"
-            ]
-          },
-          {
-            "activity": "nb_silver_generacion",
-            "dependencyConditions": [
-              "Failed"
-            ]
-          },
-          {
-            "activity": "nb_silver_precios",
-            "dependencyConditions": [
-              "Failed"
-            ]
-          },
-          {
-            "activity": "nb_dq_gate_silver",
-            "dependencyConditions": [
-              "Failed"
-            ]
-          },
-          {
-            "activity": "nb_gold_build",
-            "dependencyConditions": [
-              "Failed"
-            ]
-          },
-          {
             "activity": "nb_gold_mlv",
             "dependencyConditions": [
-              "Failed"
+              "Failed",
+              "Skipped"
+            ]
+          }
+        ]
+      },
+      {
+        "type": "Fail",
+        "typeProperties": {
+          "message": "Daily refresh failed — alert sent",
+          "errorCode": "DailyRefreshFailed"
+        },
+        "name": "fail_run",
+        "dependsOn": [
+          {
+            "activity": "alert_on_fail",
+            "dependencyConditions": [
+              "Succeeded"
             ]
           }
         ]
