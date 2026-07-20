@@ -35,13 +35,25 @@
   3. **Notebook** → `nb_dq_gate`, `p_stage` = `silver`.
   4. **Notebook** → `nb_gold_build`.
   5. **Notebook** → `nb_gold_mlv`.
-- **Office 365 Outlook** activity fed by **On fail** from every stage (select all
-      activities as sources, red dependencies). To: `v_alert_email` (library variable).
-      Subject includes `@{pipeline().RunId}` + which stage (use
-      `@{coalesce(...)}`-style or keep it simple: one generic subject, the run link
-      shows the failed stage).
-- Manual full run → all green in Monitor, end-to-end. Screenshot the run detail
-      showing every stage.
+- **Failure alert — single-source funnel** (do **not** fan seven `On fail` arrows into
+      one activity: Data Factory AND's dependencies from different sources, so the alert
+      would only fire if *every* stage failed at once — never, in a chain that stops at the
+      first failure. See Gotchas 2026-07-20).
+  - **Office 365 Outlook** `alert_on_fail`, one dependency on **`nb_gold_mlv` only**,
+        conditions **`Failed` + `Skipped`** (two conditions on one source are OR'd). Any
+        upstream failure short-circuits the chain, so the terminal is *Skipped* → alert
+        fires exactly once. To: `v_alert_email` (library variable). Subject: generic +
+        `@{pipeline().RunId}`; the run link shows the failed stage.
+  - **Fail** activity `fail_run`, dependency on `alert_on_fail` (`Succeeded`). A
+        succeeding failure-path activity would otherwise flip the pipeline to *Succeeded*
+        (Data Factory try/catch semantics); `fail_run` re-fails so Monitor stays red and
+        D3's "green means green" detection is honest.
+- Manual full run → all green in Monitor, end-to-end (alert + fail_run both *Skipped* on
+      success). Screenshot the run detail showing every stage.
+- **Prove the alert** with a controlled failure: set `nb_dq_gate_silver` base param
+      `p_stage` = `silverX` (invalid → `run_gate` raises on stage validation, no data
+      touched) → run → expect one email + pipeline **Failed** + gold stages *Skipped*.
+      Revert `p_stage` = `silver`. Screenshot the failed run.
 - Commit (`feat(orchestration): master daily refresh pipeline`).
 
 ### D2 `[YOU]` Move the schedule
@@ -72,8 +84,30 @@
 
 ## Gotchas & deviations
 
-*(expected suspects: notebook session startup per activity — consider session tags /
-high-concurrency mode if the chain is slow; Invoke-pipeline wait behavior)*
+**2026-07-20 — the "email on any failure" fan-in is a trap (D1).** First build wired
+`alert_on_fail` with seven `On fail` arrows, one from each stage. Two documented Data
+Factory behaviors break this:
+
+1. **Dependencies from different sources are AND'ed** ([MS Learn](https://learn.microsoft.com/en-us/azure/data-factory/tutorial-pipeline-failure-error-handling),
+   [Data Savvy](https://datasavvy.me/2018/10/02/data-factory-v2-activity-dependencies-are-a-logical-and/)).
+   Seven `Failed` sources into one activity ⇒ it runs only if all seven are `Failed`
+   simultaneously — impossible once the chain short-circuits at the first failure. Alert
+   never fires.
+2. **A failure-path activity that *succeeds* flips the pipeline to `Succeeded`**
+   ([Data Savvy](https://datasavvy.me/2021/02/18/azure-data-factory-activity-failures-and-pipeline-outcomes/))
+   — treated as a caught try/catch. So even a *working* alert would turn the red run green.
+
+**Fix — single-source funnel on the terminal's `Skipped` state + a `Fail` activity:**
+`alert_on_fail` depends on **`nb_gold_mlv` only**, conditions `Failed` + `Skipped` (same
+source ⇒ OR). Any upstream failure short-circuits the chain, leaving the terminal `Skipped`,
+so the alert fires exactly once regardless of which stage broke. `fail_run` (Fail activity)
+then depends on the alert's success and re-fails, restoring the honest `Failed` outcome.
+Proven with a controlled failure (`p_stage=silverX` on the gate — validation raises, no data
+touched). *(If a tenant lacks the Fail activity, the legacy workaround is a Web activity
+hitting an invalid URL.)*
+
+*(Other expected suspects: notebook session startup per activity — consider session tags /
+high-concurrency mode if the chain is slow; Invoke-pipeline wait behavior.)*
 
 ## Session log
 

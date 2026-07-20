@@ -34,6 +34,7 @@ answer, not just recognize it.
 | 2026-07-19 | M6 re-test (at C5, before the corrupted-file run) | A / Phase C | 0/1 | **M6 still open — overcorrected**: predicted the shared quarantine appends would fail like B7. The miss moved from "rows are disjoint → safe" to "same table → always fails"; correction = the conflict matrix (see M6). Rejected the "automatic" distractor |
 | 2026-07-20 | M5 re-test (at C7, before first endpoint use) | A / Phase C | 1/1 | **M5 closed** — a `DELETE` on the endpoint correctly predicted to fail for the architectural reason (read-only projection; writes go through Spark), rejecting both the async-sync trap and the wrong-layer permissions answer |
 | 2026-07-20 | C8 — Phase C post-build (6 scenario questions on the built system) | A / Phase C | 3/6 | ✓ write-then-raise rationale, gold staleness (rejected the "automatic" plant — 2 more kills), the wheel-change process (his own earlier question, retained). ✗ wholetext latency (picked "different code path" over data-indistinguishability), string-value coercion (**M7 opened**), civil-date rationale (credited Direct Lake, a platform non-requirement — the *wrong-mechanism* axis again) |
+| 2026-07-20 | Phase D pre-build (M6 + M7 re-tests + 2 concept checks) | A / Phase D | **4/4** | **M6 + M7 both closed.** M6: parallel silver = safe, *different tables* (rejected his B7 overcorrection) AND named sequencing as a capacity choice, not correctness. M7: string value → quarantine (rejected the coercion trap). Also ✓ gate-between-silver-and-gold, ✓ no-semantic-refresh (Direct Lake reads Delta). No new misconceptions |
 
 ---
 
@@ -324,7 +325,19 @@ So the parallel ×3 scenario is safe by construction — and `silver.quarantine`
 rejected the "Fabric serializes them automatically" distractor.
 **Re-test at:** Phase D (parallel orchestration branches make it concrete) and Phase G.
 
-### M7 — "The typed parser coerces what it plausibly can" ⬜ open (2026-07-20, at C8)
+**✅ Closed 2026-07-20 (Phase D pre-build).** Re-test scenario, grounded in the real
+`pl_daily_refresh` build: *"the three `nb_bronze_to_silver` runs are chained sequentially —
+if you rewired them to run in parallel off the Invoke, would they hit
+`ConcurrentAppendException`?"* Distractors offered both prior wrong models (the B7
+overcorrection "parallel writes conflict" and the "shared silver schema → one log" variant).
+Answered **no — different tables, different Delta logs**, and unprompted named the sequential
+choice as a **capacity** decision (Spark session contention on 64 CU), not a correctness one.
+That's the full conflict matrix applied cleanly: same-table-AND-a-reader is the trigger, and
+three different tables can't interact. Counts as closed — correct, new wording, after both the
+correction *and* the earlier overcorrection, with the wrong models on the table. One cold pass
+remains in the Phase G full-bank drill (drill #9).
+
+### M7 — "The typed parser coerces what it plausibly can" ✅ closed (2026-07-20, at C8→D)
 
 **Believed:** a demand value arriving as the *string* `"712345.6"` parses into
 `silver.demand_daily` — the parser coerces numeric-looking strings.
@@ -341,6 +354,16 @@ with a reason, on day one.
 for a domain decision (civil-date joins) — the *wrong-mechanism* axis (see M4, Observed
 pattern). Not ledgered separately; covered by drill re-asks.
 **Re-test at:** Phase D and Phase G.
+
+**✅ Closed 2026-07-20 (Phase D pre-build), one day after opening.** Re-test scenario, new
+value and framing: *"REE starts sending `value: \"637873.15\"` as a JSON string — what happens
+to that record in `nb_bronze_to_silver`?"* Distractors: the original coercion miss ("`float()`
+succeeds → reaches Silver") and a wrong severity ("crashes the run"). Answered **quarantined**,
+holding the boundary that the parser refuses to coerce because a stringly-typed number is
+producer contract drift worth surfacing. Correct, new wording, after the correction, original
+miss on the table → closed. One cold pass remains at Phase G (drill #11). *Note the Q5
+civil-date/Direct-Lake wrong-mechanism slip was also re-tested this session (concept Q4, "why
+no semantic-model refresh") and answered correctly — Direct Lake reads Delta directly.*
 
 *(Phase C–G sections appended at each 🎓 checkpoint.)*
 

@@ -7,10 +7,13 @@ guides (`phase-*.md`); steps marked `[Track B]` there don't apply here. Sibling 
 **Tenant/capacity:** ESESA/UCAM student tenant · Fabric trial capacity ·
 window ends ~2026-07-31.
 **Git:** Fabric ↔ Azure DevOps repo (`develop`, `/fabric`); GitHub canonical via mirror.
-**Status:** 🚧 **Phase D — Orchestration, opening at D1** (`pl_daily_refresh` master
-pipeline). **Phase C ✅ complete 2026-07-20** — C1–C9 done, all 5 done-criteria met; M5
-closed, M7 opened at the 3/6 post-build quiz; C9 portfolio narrative reviewed and approved
-(diagram switched to vertical for legibility, `51191cc`). M6 + M7 re-tests due in Phase D.
+**Status:** 🚧 **Phase D — Orchestration, D1 built** (`pl_daily_refresh` master pipeline,
+Fabric commit `0647f0b`, mirrored 0/0). Pre-build 🎓 check **4/4 — M6 + M7 both closed**
+(learning log). **Next:** rework the failure-alert fan-in (multi-arrow AND semantics may
+stop it firing on a single-stage failure — verify with a forced failure) → D2 (swap the
+schedule off `pl_ingest_daily` onto the master). **Phase C ✅ complete 2026-07-20** — C1–C9,
+all done-criteria met; C9 portfolio narrative reviewed and approved (diagram switched to
+vertical for legibility, `51191cc`). Open misconception: **M3** only (re-test Phase F).
 Phase B ✅ complete (2026-07-17); fully closed 2026-07-19 (`b9-scheduled-run-green.png`).
 Phase A ✅ complete (2026-07-14).
 **DevOps:** org `glopezc443` · project/repo `fabric-energy-lakehouse` · remote `devops`
