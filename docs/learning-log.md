@@ -32,6 +32,7 @@ answer, not just recognize it.
 | 2026-07-17 | M4 re-test (right after running the B8c kill-test) | A / Phase B | 1/1 | **M4 closed** — rejected "watermark resume" with the original miss on the table |
 | 2026-07-18 | C1.5 — Delta, DQ gate & MLVs (pre-build) | A / Phase C | **6/6** | First perfect check. Beat the "automatic" trap twice head-on (V-Order-only; gate-doesn't-auto-retry). No new misconceptions |
 | 2026-07-19 | M6 re-test (at C5, before the corrupted-file run) | A / Phase C | 0/1 | **M6 still open — overcorrected**: predicted the shared quarantine appends would fail like B7. The miss moved from "rows are disjoint → safe" to "same table → always fails"; correction = the conflict matrix (see M6). Rejected the "automatic" distractor |
+| 2026-07-20 | M5 re-test (at C7, before first endpoint use) | A / Phase C | 1/1 | **M5 closed** — a `DELETE` on the endpoint correctly predicted to fail for the architectural reason (read-only projection; writes go through Spark), rejecting both the async-sync trap and the wrong-layer permissions answer |
 
 ---
 
@@ -145,7 +146,7 @@ run die before the watermark chain* — the live proof that the watermark couldn
 protector. Gap counts as closed: correct, on new wording, after the correction, with the
 original wrong answer on the table. Still gets one cold pass in the Phase G full-bank drill.
 
-### M5 — "A Lookup can write, and it commits automatically on success" ⬜ open (2026-07-14)
+### M5 — "A Lookup can write, and it commits automatically on success" ✅ closed (2026-07-20, at C7)
 
 **Believed:** the Lookup could write the watermark back, but its automatic commit-on-success
 would break our after-the-copy timing rule.
@@ -164,6 +165,15 @@ this is one of the primary Lakehouse-vs-Warehouse decision criteria.
 **Why it matters:** this was the planted "…happens automatically" distractor (see *Observed
 pattern*) and it landed — the signature failure, in a new costume.
 **Re-test at:** Phase C (when the SQL endpoint is used for the gold proofs) and Phase G.
+
+**✅ Closed 2026-07-20, immediately before first hands-on endpoint use (C7).** Re-test
+scenario: *"while in the endpoint you run `DELETE FROM silver.quarantine …` — what happens?"*
+Distractors included the async-sync costume of the original miss (*deletes, syncs back on the
+next refresh*) and a wrong-layer answer (*works for workspace admins*). Answered **fails — the
+endpoint is a read-only projection; writes go through a Spark writer**, i.e. the architectural
+reason, not a permissions or timing story. Counts as closed: correct, new wording, after the
+correction, original miss on the table. The C7 proofs he ran seconds later are the live
+demonstration. One cold pass remains in the Phase G full-bank drill.
 
 ---
 
