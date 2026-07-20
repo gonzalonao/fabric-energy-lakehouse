@@ -33,6 +33,7 @@ answer, not just recognize it.
 | 2026-07-18 | C1.5 — Delta, DQ gate & MLVs (pre-build) | A / Phase C | **6/6** | First perfect check. Beat the "automatic" trap twice head-on (V-Order-only; gate-doesn't-auto-retry). No new misconceptions |
 | 2026-07-19 | M6 re-test (at C5, before the corrupted-file run) | A / Phase C | 0/1 | **M6 still open — overcorrected**: predicted the shared quarantine appends would fail like B7. The miss moved from "rows are disjoint → safe" to "same table → always fails"; correction = the conflict matrix (see M6). Rejected the "automatic" distractor |
 | 2026-07-20 | M5 re-test (at C7, before first endpoint use) | A / Phase C | 1/1 | **M5 closed** — a `DELETE` on the endpoint correctly predicted to fail for the architectural reason (read-only projection; writes go through Spark), rejecting both the async-sync trap and the wrong-layer permissions answer |
+| 2026-07-20 | C8 — Phase C post-build (6 scenario questions on the built system) | A / Phase C | 3/6 | ✓ write-then-raise rationale, gold staleness (rejected the "automatic" plant — 2 more kills), the wheel-change process (his own earlier question, retained). ✗ wholetext latency (picked "different code path" over data-indistinguishability), string-value coercion (**M7 opened**), civil-date rationale (credited Direct Lake, a platform non-requirement — the *wrong-mechanism* axis again) |
 
 ---
 
@@ -266,6 +267,24 @@ Questions to run cold at Phase G / end of project. Grows one section per phase.
     Which is which, and why is that split deliberate? (Reach: structural vs semantic — a null
     can't even become a typed row (quarantine, run continues); a negative parses fine and only a
     *policy* can judge it (gate, run fails). Two failure modes, two mechanisms, two audit trails.)
+11. The value arrives as the STRING `"712345.6"` — `float()` would happily convert it. Where
+    does it go and why? (M7 — reach: quarantine; coercion is a *choice* and this parser chose
+    strict, because a stringly-typed number is producer contract drift worth surfacing, not
+    repairing silently.)
+12. The wholetext bug shipped in C4 and ran green over 43 files, three times. Why did it stay
+    invisible, and what's the general lesson? (Reach: single-line JsonSink files make line-mode
+    and wholetext reads indistinguishable — the code's correctness rested on the *producer's
+    formatting habit*, an implicit contract; latent until the first multi-line file. Bonus
+    mechanism: `.option("wholetext", True)` is clobbered by `text()`'s own `wholetext=False`
+    keyword default.)
+13. `fact_price_hourly` carries both `datetime_utc` and a Madrid civil `date`. Why can't either
+    replace the other? (Reach: UTC = unique row identity across DST; civil date = what daily
+    joins mean — `to_date(utc)` misdates the first 1–2 h of every Madrid day onto the previous
+    day. Platform requirements — Direct Lake — have nothing to do with it.)
+14. Fresh data lands in silver at 08:00. What do `gold.fact_generation_daily` and the MLV each
+    show at 08:05, and what has to happen for each to update? (Reach: both stale — the fact
+    until `nb_gold_build` reruns, the MLV until its managed refresh; nothing in gold tracks
+    silver live, which is why Phase D's master pipeline chains the layers explicitly.)
 
 ## Misconception ledger (cont.)
 
@@ -304,6 +323,24 @@ So the parallel ×3 scenario is safe by construction — and `silver.quarantine`
 **append-only** is precisely what makes sharing it across writers safe. Positive note: he
 rejected the "Fabric serializes them automatically" distractor.
 **Re-test at:** Phase D (parallel orchestration branches make it concrete) and Phase G.
+
+### M7 — "The typed parser coerces what it plausibly can" ⬜ open (2026-07-20, at C8)
+
+**Believed:** a demand value arriving as the *string* `"712345.6"` parses into
+`silver.demand_daily` — the parser coerces numeric-looking strings.
+**Actually:** `_as_float` is deliberately strict — `isinstance(value, (int, float))` or
+`TypeError`; a string quarantines even though `float("712345.6")` would succeed. **Coercion is
+a choice, and this codebase chose against it:** a number arriving as a string means the
+producer's contract drifted, and silent coercion would hide that drift until it broke
+something subtler. Strict rejection converts contract drift into a visible quarantine row
+with a reason, on day one.
+**The boundary to hold:** *anything that cannot become a typed row without guessing* is
+**structural** → quarantine (run continues). Only values that ARE valid typed rows get judged
+**semantically** → gate (run fails). A string value never reaches the gate's jurisdiction.
+**Related pattern:** the Q5 miss the same day credited a platform requirement (Direct Lake)
+for a domain decision (civil-date joins) — the *wrong-mechanism* axis (see M4, Observed
+pattern). Not ledgered separately; covered by drill re-asks.
+**Re-test at:** Phase D and Phase G.
 
 *(Phase C–G sections appended at each 🎓 checkpoint.)*
 

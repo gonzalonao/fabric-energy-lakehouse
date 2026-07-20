@@ -7,9 +7,9 @@ guides (`phase-*.md`); steps marked `[Track B]` there don't apply here. Sibling 
 **Tenant/capacity:** ESESA/UCAM student tenant · Fabric trial capacity ·
 window ends ~2026-07-31.
 **Git:** Fabric ↔ Azure DevOps repo (`develop`, `/fabric`); GitHub canonical via mirror.
-**Status:** 🚧 **Phase C — Transform & DQ in progress** (C1–C7 done; 4 of 5 done-criteria
-met; **M5 closed** at the C7 re-test). Next: **C8** — wrap-up (post-build 🎓 quiz, README
-MLV paragraph, data dictionary gold section, evidence commit), then C9 📣.
+**Status:** 🚧 **Phase C — Transform & DQ in progress** (C1–C8 done; **all 5 done-criteria
+met**; M5 closed, M7 opened at the 3/6 post-build quiz). Next: **C9 📣** — engineering
+narrative in the portfolio entry, then Phase C closes.
 Phase B ✅ complete (2026-07-17); fully closed 2026-07-19 (`b9-scheduled-run-green.png`).
 Phase A ✅ complete (2026-07-14).
 **DevOps:** org `glopezc443` · project/repo `fabric-energy-lakehouse` · remote `devops`
@@ -193,7 +193,13 @@ Done criteria:
       reproduces 2024-03 with no fan-out (31/31 days), MLV row equals the star-derived
       share (65.69%). **M5 closed** on the pre-run re-test (`DELETE` on the endpoint —
       predicted read-only for the architectural reason). 3 screenshots)*
-- [ ] C8 — wrap-up (README MLV paragraph, data dictionary, evidence)
+- [x] C8 — wrap-up (README MLV paragraph, data dictionary, evidence) *(2026-07-20: honest
+      MLV paragraph in the README (when declarative wins, when it doesn't — DROP+CREATE
+      churn, single-SELECT limit, engine-cadence vs gate-sequenced refresh); data dictionary
+      gained the full gold section (3 dims, 3 facts, 2 MLVs, the civil-date rationale);
+      all 11 Phase C screenshots already cataloged. **Post-build 🎓 quiz: 3/6** — M7 opened
+      (parser-coercion), wrong-mechanism axis reappeared (Q5), automatic trap beaten twice
+      more; see learning log)*
 - [ ] C9 — 📣 engineering narrative in portfolio entry
 
 Done criteria:
@@ -202,8 +208,8 @@ Done criteria:
 - [x] Corrupted Bronze file fails the run with clear DQ error *(C5: `c5-dq-gate-fail.png` —
       rule, table, column and row count in the message)*
 - [x] Gold star schema built (3 dims + 3 facts) *(C6: `c6-gold-tables.png`, counts verified)*
-- [~] ≥1 MLV + honest README paragraph *(2 MLVs declared and visible; README paragraph due
-      at C8)*
+- [x] ≥1 MLV + honest README paragraph *(2 MLVs live and endpoint-proven; README paragraph
+      written at C8)*
 - [x] Gold queries from SQL endpoint (`.sql` proofs) *(C7: `sql/proofs/` + 3 screenshots)*
 
 ## Phase D — Orchestration · [guide](phase-d-orchestration.md) · ⬜
