@@ -9,10 +9,12 @@ window ends ~2026-07-31.
 **Git:** Fabric ↔ Azure DevOps repo (`develop`, `/fabric`); GitHub canonical via mirror.
 **Status:** 🚧 **Phase D — Orchestration, D1 ✅ done** (`pl_daily_refresh` built, alert
 funnel fixed + failure-proven, `cc4d6a0`, mirrored 0/0; green-run screenshot pending).
-Pre-build 🎓 check **4/4 — M6 + M7 both closed** (learning log). **Next: D2** — disable the
-`pl_ingest_daily` daily schedule and move the 08:00 Madrid trigger onto `pl_daily_refresh`
-(else double ingest). **Phase C ✅ complete 2026-07-20** — C1–C9, all done-criteria met.
-Open misconception: **M3** only (re-test Phase F).
+Pre-build 🎓 check **4/4 — M6 + M7 both closed** (learning log). **D1 ✅ + D2 ✅**
+(`95947d3`, mirrored 0/0). **D3 passive** — first scheduled master run 2026-07-22 08:00,
+capture two consecutive scheduled greens. **Next active work: Phase E — Serving** (Direct
+Lake model + report), running in parallel with the D3 wait. **Phase C ✅ complete
+2026-07-20**. Open misconception: **M3** only (re-test Phase F). Pending screenshots:
+`d1-master-run-green.png`, `d2-master-schedule.png`.
 Phase B ✅ complete (2026-07-17); fully closed 2026-07-19 (`b9-scheduled-run-green.png`).
 Phase A ✅ complete (2026-07-14).
 **DevOps:** org `glopezc443` · project/repo `fabric-energy-lakehouse` · remote `devops`
@@ -233,8 +235,15 @@ Done criteria:
       OR funnel) + `fail_run` Fail activity re-asserting Failed. **Proven** with a controlled
       break (`p_stage=silverX`): gate red, gold skipped, one email via `vl_energy` library var,
       pipeline Failed — `d1-alert-failure-proof.png` (`cc4d6a0`). Green-run screenshot pending)*
-- [ ] D2 — schedule moved to master
-- [ ] D3 — two-day green proof (scheduled runs)
+- [x] D2 — schedule moved to master *(Fabric commit `95947d3`: `pl_ingest_daily` schedule
+      **disabled** (`.schedules` `enabled:false`), `pl_daily_refresh` **scheduled** Daily
+      08:00 `Romance Standard Time`, start 2026-07-21 — so only one ingest per morning.
+      **Deviation:** end date serialized as `2027-07-31`, not the intended `2026-07-31`
+      (capacity window); harmless (capacity expires ~2026-07-31 and D3 finishes this week),
+      to trim next time in the Schedule pane. Screenshot `d2-master-schedule.png` pending)*
+- [ ] D3 — two-day green proof (scheduled runs) *(first scheduled master run fires
+      2026-07-22 08:00 Madrid; passive — capture two consecutive scheduled greens with
+      **Run kind = Scheduled** visible, while Phase E proceeds)*
 - [ ] D4 — review + evidence + 🎓 check
 
 Done criteria:
