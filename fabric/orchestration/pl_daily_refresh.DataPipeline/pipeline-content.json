@@ -1,0 +1,258 @@
+{
+  "properties": {
+    "activities": [
+      {
+        "type": "InvokePipeline",
+        "typeProperties": {
+          "parameters": {},
+          "waitOnCompletion": true,
+          "workspaceId": "00000000-0000-0000-0000-000000000000",
+          "pipelineId": "58525121-af8f-86b8-405f-b8e756cffc5f",
+          "operationType": "InvokeFabricPipeline"
+        },
+        "externalReferences": {
+          "connection": "7409c7aa-34fa-4e2a-98a6-f983c750e3f3"
+        },
+        "policy": {
+          "timeout": "0.12:00:00",
+          "retry": 0,
+          "retryIntervalInSeconds": 30,
+          "secureInput": false,
+          "secureOutput": false
+        },
+        "name": "inv_daily_ingest",
+        "dependsOn": []
+      },
+      {
+        "type": "TridentNotebook",
+        "typeProperties": {
+          "notebookId": "2b38d0d4-bb17-b4a9-4317-2e5b7e95959e",
+          "workspaceId": "00000000-0000-0000-0000-000000000000",
+          "parameters": {
+            "p_indicator": {
+              "value": "demanda_evolucion",
+              "type": "string"
+            }
+          }
+        },
+        "policy": {
+          "timeout": "0.12:00:00",
+          "retry": 0,
+          "retryIntervalInSeconds": 30,
+          "secureInput": false,
+          "secureOutput": false
+        },
+        "name": "nb_silver_demanda",
+        "dependsOn": [
+          {
+            "activity": "inv_daily_ingest",
+            "dependencyConditions": [
+              "Succeeded"
+            ]
+          }
+        ]
+      },
+      {
+        "type": "TridentNotebook",
+        "typeProperties": {
+          "notebookId": "2b38d0d4-bb17-b4a9-4317-2e5b7e95959e",
+          "workspaceId": "00000000-0000-0000-0000-000000000000",
+          "parameters": {
+            "p_indicator": {
+              "value": "precios_mercados",
+              "type": "string"
+            }
+          }
+        },
+        "policy": {
+          "timeout": "0.12:00:00",
+          "retry": 0,
+          "retryIntervalInSeconds": 30,
+          "secureInput": false,
+          "secureOutput": false
+        },
+        "name": "nb_silver_precios",
+        "dependsOn": [
+          {
+            "activity": "nb_silver_generacion",
+            "dependencyConditions": [
+              "Succeeded"
+            ]
+          }
+        ]
+      },
+      {
+        "type": "TridentNotebook",
+        "typeProperties": {
+          "notebookId": "2b38d0d4-bb17-b4a9-4317-2e5b7e95959e",
+          "workspaceId": "00000000-0000-0000-0000-000000000000",
+          "parameters": {
+            "p_indicator": {
+              "value": "generacion_estructura",
+              "type": "string"
+            }
+          }
+        },
+        "policy": {
+          "timeout": "0.12:00:00",
+          "retry": 0,
+          "retryIntervalInSeconds": 30,
+          "secureInput": false,
+          "secureOutput": false
+        },
+        "name": "nb_silver_generacion",
+        "dependsOn": [
+          {
+            "activity": "nb_silver_demanda",
+            "dependencyConditions": [
+              "Succeeded"
+            ]
+          }
+        ]
+      },
+      {
+        "type": "TridentNotebook",
+        "typeProperties": {
+          "notebookId": "e161785f-c5eb-87e0-42a2-1cb158e77203",
+          "workspaceId": "00000000-0000-0000-0000-000000000000",
+          "parameters": {
+            "p_stage": {
+              "value": "silver",
+              "type": "string"
+            }
+          }
+        },
+        "policy": {
+          "timeout": "0.12:00:00",
+          "retry": 0,
+          "retryIntervalInSeconds": 30,
+          "secureInput": false,
+          "secureOutput": false
+        },
+        "name": "nb_dq_gate_silver",
+        "dependsOn": [
+          {
+            "activity": "nb_silver_precios",
+            "dependencyConditions": [
+              "Succeeded"
+            ]
+          }
+        ]
+      },
+      {
+        "type": "TridentNotebook",
+        "typeProperties": {
+          "notebookId": "71671a54-5025-938d-4198-396062a26aca",
+          "workspaceId": "00000000-0000-0000-0000-000000000000"
+        },
+        "policy": {
+          "timeout": "0.12:00:00",
+          "retry": 0,
+          "retryIntervalInSeconds": 30,
+          "secureInput": false,
+          "secureOutput": false
+        },
+        "name": "nb_gold_build",
+        "dependsOn": [
+          {
+            "activity": "nb_dq_gate_silver",
+            "dependencyConditions": [
+              "Succeeded"
+            ]
+          }
+        ]
+      },
+      {
+        "type": "TridentNotebook",
+        "typeProperties": {
+          "notebookId": "954eb453-25b0-9657-43c7-477779657a65",
+          "workspaceId": "00000000-0000-0000-0000-000000000000"
+        },
+        "policy": {
+          "timeout": "0.12:00:00",
+          "retry": 0,
+          "retryIntervalInSeconds": 30,
+          "secureInput": false,
+          "secureOutput": false
+        },
+        "name": "nb_gold_mlv",
+        "dependsOn": [
+          {
+            "activity": "nb_gold_build",
+            "dependencyConditions": [
+              "Succeeded"
+            ]
+          }
+        ]
+      },
+      {
+        "type": "Office365Outlook",
+        "typeProperties": {
+          "inputs": {
+            "body": {
+              "To": "@pipeline().libraryVariables.vl_energy_v_alert_email",
+              "Subject": "pl_daily_refresh FAILED — @{pipeline().RunId}",
+              "Body": "A stage of the daily refresh failed. Open the run: @{pipeline().RunId}",
+              "Sensitivity": "",
+              "Importance": "Normal"
+            },
+            "method": "post",
+            "path": "/v2/Mail"
+          }
+        },
+        "name": "alert_on_fail",
+        "dependsOn": [
+          {
+            "activity": "inv_daily_ingest",
+            "dependencyConditions": [
+              "Failed"
+            ]
+          },
+          {
+            "activity": "nb_silver_demanda",
+            "dependencyConditions": [
+              "Failed"
+            ]
+          },
+          {
+            "activity": "nb_silver_generacion",
+            "dependencyConditions": [
+              "Failed"
+            ]
+          },
+          {
+            "activity": "nb_silver_precios",
+            "dependencyConditions": [
+              "Failed"
+            ]
+          },
+          {
+            "activity": "nb_dq_gate_silver",
+            "dependencyConditions": [
+              "Failed"
+            ]
+          },
+          {
+            "activity": "nb_gold_build",
+            "dependencyConditions": [
+              "Failed"
+            ]
+          },
+          {
+            "activity": "nb_gold_mlv",
+            "dependencyConditions": [
+              "Failed"
+            ]
+          }
+        ]
+      }
+    ],
+    "libraryVariables": {
+      "vl_energy_v_alert_email": {
+        "type": "String",
+        "variableName": "v_alert_email",
+        "libraryName": "vl_energy"
+      }
+    }
+  }
+}
