@@ -7,9 +7,9 @@ guides (`phase-*.md`); steps marked `[Track B]` there don't apply here. Sibling 
 **Tenant/capacity:** ESESA/UCAM student tenant · Fabric trial capacity ·
 window ends ~2026-07-31.
 **Git:** Fabric ↔ Azure DevOps repo (`develop`, `/fabric`); GitHub canonical via mirror.
-**Status:** 🚧 **Phase C — Transform & DQ in progress** (C1–C6 done; gold star schema built
-— 3 dims + 3 facts + 2 MLVs, all counts verified). Next: **C7** — SQL proofs from the
-analytics endpoint (M5 live re-test).
+**Status:** 🚧 **Phase C — Transform & DQ in progress** (C1–C7 done; 4 of 5 done-criteria
+met; **M5 closed** at the C7 re-test). Next: **C8** — wrap-up (post-build 🎓 quiz, README
+MLV paragraph, data dictionary gold section, evidence commit), then C9 📣.
 Phase B ✅ complete (2026-07-17); fully closed 2026-07-19 (`b9-scheduled-run-green.png`).
 Phase A ✅ complete (2026-07-14).
 **DevOps:** org `glopezc443` · project/repo `fabric-energy-lakehouse` · remote `devops`
@@ -183,10 +183,16 @@ Done criteria:
       `nb_gold_build` full atomic rebuild — natural keys, `overwriteSchema`, `dim_indicator`
       imports the wheel's `INDICATORS` (C2 duplication collapsed), price fact carries a
       civil-Madrid `date` — and `nb_gold_mlv` declares 2 engine-refreshed MLVs
-      (`IF NOT EXISTS`). Both ran green 2026-07-20, all counts as predicted (dim_date 1826,
-      dim_technology 15, dim_indicator 3, facts 1295/19412/102763); 6 tables + 2 MLVs
+      (`IF NOT EXISTS`). Both ran green 2026-07-20, counts verified (dim_date 1826,
+      dim_technology **16** — predicted 15 from one month's payload, 16 distinct
+      non-composite series exist across the full range, no duplicate names —
+      dim_indicator 3, facts 1295/19412/102763); 6 tables + 2 MLVs
       verified — `c6-gold-tables.png`)*
-- [ ] C7 — SQL proofs from the endpoint
+- [x] C7 — SQL proofs from the endpoint *(3 committed proofs in `sql/proofs/` run live
+      2026-07-20: row counts exact (dim_technology **16**, see C6 note), star join
+      reproduces 2024-03 with no fan-out (31/31 days), MLV row equals the star-derived
+      share (65.69%). **M5 closed** on the pre-run re-test (`DELETE` on the endpoint —
+      predicted read-only for the architectural reason). 3 screenshots)*
 - [ ] C8 — wrap-up (README MLV paragraph, data dictionary, evidence)
 - [ ] C9 — 📣 engineering narrative in portfolio entry
 
@@ -198,7 +204,7 @@ Done criteria:
 - [x] Gold star schema built (3 dims + 3 facts) *(C6: `c6-gold-tables.png`, counts verified)*
 - [~] ≥1 MLV + honest README paragraph *(2 MLVs declared and visible; README paragraph due
       at C8)*
-- [ ] Gold queries from SQL endpoint (`.sql` proofs)
+- [x] Gold queries from SQL endpoint (`.sql` proofs) *(C7: `sql/proofs/` + 3 screenshots)*
 
 ## Phase D — Orchestration · [guide](phase-d-orchestration.md) · ⬜
 
@@ -564,3 +570,16 @@ Scores, misconceptions and the drill bank live in **[`docs/learning-log.md`](../
   predicted count matched (dim_date 1826, dim_technology 15, dim_indicator 3, facts
   1295/19412/102763). `c6-gold-tables.png` shows all five schema nodes with gold's 8 objects.
   **Next: C7 — SQL proofs from the analytics endpoint; M5's live re-test happens there.**
+- **2026-07-20 (later) — C7 done, M5 closed, one prediction corrected.** M5 re-tested
+  *before* first endpoint use (`DELETE FROM silver.quarantine` scenario): answered with the
+  architectural reason (read-only projection; writes go through Spark), rejecting the
+  async-sync costume of the original miss — **closed**, cold pass at G remains. The three
+  committed proofs ran exact: counts (with **dim_technology = 16**, not the predicted 15 —
+  the prediction over-generalized one month's payload; verified 16 *distinct* names, so no
+  star fan-out risk), the 2024-03 star join (31/31 days, 65.69% renewable), and the MLV row
+  equal to the star-derived share — imperative rebuild and engine-refreshed view agreeing on
+  the same numbers. **Feedback logged as standing practice** (memory + here): after every
+  quiz answer, state the correct answer and the full why immediately; add a post-build
+  ~6-question quiz at the end of every phase (Phase C's runs at C8) — lone-question re-tests
+  only for targeted miss retirement. **Next: C8 — post-build quiz, README MLV paragraph,
+  data dictionary gold section, wrap-up.**
