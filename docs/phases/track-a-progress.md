@@ -7,13 +7,12 @@ guides (`phase-*.md`); steps marked `[Track B]` there don't apply here. Sibling 
 **Tenant/capacity:** ESESA/UCAM student tenant · Fabric trial capacity ·
 window ends ~2026-07-31.
 **Git:** Fabric ↔ Azure DevOps repo (`develop`, `/fabric`); GitHub canonical via mirror.
-**Status:** 🚧 **Phase D — Orchestration, D1 built** (`pl_daily_refresh` master pipeline,
-Fabric commit `0647f0b`, mirrored 0/0). Pre-build 🎓 check **4/4 — M6 + M7 both closed**
-(learning log). **Next:** rework the failure-alert fan-in (multi-arrow AND semantics may
-stop it firing on a single-stage failure — verify with a forced failure) → D2 (swap the
-schedule off `pl_ingest_daily` onto the master). **Phase C ✅ complete 2026-07-20** — C1–C9,
-all done-criteria met; C9 portfolio narrative reviewed and approved (diagram switched to
-vertical for legibility, `51191cc`). Open misconception: **M3** only (re-test Phase F).
+**Status:** 🚧 **Phase D — Orchestration, D1 ✅ done** (`pl_daily_refresh` built, alert
+funnel fixed + failure-proven, `cc4d6a0`, mirrored 0/0; green-run screenshot pending).
+Pre-build 🎓 check **4/4 — M6 + M7 both closed** (learning log). **Next: D2** — disable the
+`pl_ingest_daily` daily schedule and move the 08:00 Madrid trigger onto `pl_daily_refresh`
+(else double ingest). **Phase C ✅ complete 2026-07-20** — C1–C9, all done-criteria met.
+Open misconception: **M3** only (re-test Phase F).
 Phase B ✅ complete (2026-07-17); fully closed 2026-07-19 (`b9-scheduled-run-green.png`).
 Phase A ✅ complete (2026-07-14).
 **DevOps:** org `glopezc443` · project/repo `fabric-energy-lakehouse` · remote `devops`
@@ -225,7 +224,15 @@ Done criteria:
 
 ## Phase D — Orchestration · [guide](phase-d-orchestration.md) · ⬜
 
-- [ ] D1 — master pipeline `pl_daily_refresh`
+- [x] D1 — master pipeline `pl_daily_refresh` *(Fabric commit `0647f0b`: Invoke
+      `pl_ingest_daily` (wait-on-completion) → `nb_silver_demanda/generacion/precios`
+      (sequential) → `nb_dq_gate_silver` → `nb_gold_build` → `nb_gold_mlv`, all Succeeded
+      deps; green end-to-end. **Alert reworked** (`a451d50`): first build's seven-way On-fail
+      fan-in never fires — Data Factory AND's cross-source deps — and a succeeding alert flips
+      the run green. Fixed with `alert_on_fail` ← `nb_gold_mlv` [Failed+Skipped] (single-source
+      OR funnel) + `fail_run` Fail activity re-asserting Failed. **Proven** with a controlled
+      break (`p_stage=silverX`): gate red, gold skipped, one email via `vl_energy` library var,
+      pipeline Failed — `d1-alert-failure-proof.png` (`cc4d6a0`). Green-run screenshot pending)*
 - [ ] D2 — schedule moved to master
 - [ ] D3 — two-day green proof (scheduled runs)
 - [ ] D4 — review + evidence + 🎓 check
