@@ -7,9 +7,10 @@ guides (`phase-*.md`); steps marked `[Track B]` there don't apply here. Sibling 
 **Tenant/capacity:** ESESA/UCAM student tenant · Fabric trial capacity ·
 window ends ~2026-07-31.
 **Git:** Fabric ↔ Azure DevOps repo (`develop`, `/fabric`); GitHub canonical via mirror.
-**Status:** 🚧 **Phase C — Transform & DQ in progress** (C1–C8 done; **all 5 done-criteria
-met**; M5 closed, M7 opened at the 3/6 post-build quiz). Next: **C9 📣** — engineering
-narrative in the portfolio entry, then Phase C closes.
+**Status:** 🚧 **Phase C — Transform & DQ, C1–C8 done + C9 drafted** (all 5 done-criteria
+met; M5 closed, M7 opened at the 3/6 post-build quiz; portfolio narrative on the held
+branch awaiting Gonzalo's review). Phase C closes on that review → then **Phase D —
+Orchestration** (M6 + M7 re-tests due there).
 Phase B ✅ complete (2026-07-17); fully closed 2026-07-19 (`b9-scheduled-run-green.png`).
 Phase A ✅ complete (2026-07-14).
 **DevOps:** org `glopezc443` · project/repo `fabric-energy-lakehouse` · remote `devops`
@@ -200,7 +201,12 @@ Done criteria:
       all 11 Phase C screenshots already cataloged. **Post-build 🎓 quiz: 3/6** — M7 opened
       (parser-coercion), wrong-mechanism axis reappeared (Q5), automatic trap beaten twice
       more; see learning log)*
-- [ ] C9 — 📣 engineering narrative in portfolio entry
+- [~] C9 — 📣 engineering narrative in portfolio entry *(draft committed `b95f1da` on the
+      held branch `feat/fabric-energy-lakehouse-entry`, EN + ES in step, build passes:
+      finalized architecture Mermaid (quarantine + gate explicit), ingestion economics +
+      both incident arcs, structural/semantic split with the coal and wholetext stories,
+      typed-package/thin-notebook trade-off, star/MLV cross-check. **Remaining `[YOU]`:
+      review the draft**; branch still merges at the Phase G 📣 checkpoint)*
 
 Done criteria:
 - [x] Silver tables typed/deduped/UTC; quarantine works *(C4 + C5: `c4-silver-tables.png`,
@@ -589,3 +595,17 @@ Scores, misconceptions and the drill bank live in **[`docs/learning-log.md`](../
   ~6-question quiz at the end of every phase (Phase C's runs at C8) — lone-question re-tests
   only for targeted miss retirement. **Next: C8 — post-build quiz, README MLV paragraph,
   data dictionary gold section, wrap-up.**
+- **2026-07-20 (night) — C8 done, C9 drafted: Phase C at the finish line.** Post-build 🎓
+  quiz ran (**3/6**): correct on write-then-raise, gold staleness (the "automatic" plant
+  rejected again) and the wheel-change cycle; missed the wholetext-latency mechanism, the
+  parser's strict-coercion stance (**M7 opened**, with correction: coercion is a choice, and
+  strictness turns producer contract drift into a visible quarantine row) and the
+  civil-date rationale (credited Direct Lake — the *wrong-mechanism* axis again; drills
+  11–14 added). C8 docs shipped (`0510731`): honest MLV paragraph in the README, full gold
+  section in the data dictionary. C9 engineering narrative drafted EN + ES on the
+  portfolio's held branch (`b95f1da`, build green, 27 pages): architecture Mermaid with
+  quarantine and gate explicit, the ingestion economics (3h53m vs ~4m) and both incident
+  arcs, the structural/semantic story pair (coal negatives; wholetext), the
+  typed-package/thin-notebook trade-off, the 65.69% star/MLV cross-check. **Awaiting
+  Gonzalo's review of the draft; the branch merges at Phase G. Next: Phase D —
+  Orchestration (D1 master pipeline; M6/M7 re-tests due).**
