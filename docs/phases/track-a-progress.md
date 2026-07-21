@@ -22,8 +22,8 @@ formatting — `Demand YoY %` and the partial-month trend — both fixed in TMDL
 (`770bb07`). All three Phase E done-criteria met. E1.5 🎓 **4/4**.
 **Next: E5 Desktop formatting pass → E8 portfolio showcase.**
 
-**Phase C ✅ complete 2026-07-20**. Open misconception: **M3** only (re-test Phase F).
-Pending screenshots: `d1-master-run-green.png`, `d2-master-schedule.png`.
+**Phase C ✅ complete 2026-07-20**. **No open misconceptions** — M3 closed 2026-07-21 at the
+Phase F opening (M1–M7 all closed; full drill bank still runs cold at Phase G).
 Phase B ✅ complete (2026-07-17); fully closed 2026-07-19 (`b9-scheduled-run-green.png`).
 Phase A ✅ complete (2026-07-14).
 **DevOps:** org `glopezc443` · project/repo `fabric-energy-lakehouse` · remote `devops`
@@ -366,6 +366,16 @@ Done criteria:
 
 *Track A expectation: SPN blocked → documented local `fabric-cicd` fallback.*
 
+**M3 closed here (2026-07-21), before any deploy code existed** — re-tested against the real
+`pl_ingest_ree/pipeline-content.json` rather than a multiple-choice: *bind prod to `main`,
+Update all, run the pipeline — what happens?* Answered **runs green against dev's objects**,
+rejecting the "Fabric remaps GUIDs automatically" plant. That leaves **zero open
+misconceptions** going into Phase F. One factual sub-question is deliberately left open for
+**F6** to settle by observation: whether the lakehouse sink fails loudly or silently writes to
+dev depends on how `workspaceId: 00000000-…` resolves, and this tracker's ID table and the
+learning log currently disagree. The two-pass bootstrap is a free natural experiment — record
+what actually happens and correct whichever document is wrong.
+
 - [ ] F1 — SPN attempt (timeboxed; outcome recorded)
 - [ ] F2 — IDs collected + prod value set
 - [ ] F3 — deploy code (`scripts/deploy.py`, `parameter.yml`, workflow)
@@ -411,6 +421,9 @@ Scores, misconceptions and the drill bank live in **[`docs/learning-log.md`](../
 | 2026-07-14 | A11 — Git integration (post-build) | 3/4 — 2 gaps closed, 1 open (**M3**: prod deploy direction; re-test at Phase F) |
 | 2026-07-14 | B1.5 — ingestion & watermarks (pre-build) | 4/6 — 2 gaps open (**M4**: watermark ≠ idempotency, re-test at B8; **M5**: SQL endpoint is read-only, re-test at Phase C) |
 | 2026-07-18 | C1.5 — Delta, DQ gate & MLVs (pre-build) | **6/6** — first perfect check; beat the "automatic" trap twice. M5 (SQL endpoint read-only) re-test still due at C7; M6 (Delta concurrency) at C4/C5 |
+| 2026-07-20 | Phase D pre-build (M6 + M7 re-tests + 2 concept checks) | **4/4** — M6 + M7 both closed |
+| 2026-07-21 | E1.5 — Direct Lake vs Import vs DirectQuery (pre-build, the #1 drill) | **4/4** — beat the "automatic" plant twice and the M2-echo layer-conflation distractor |
+| 2026-07-21 | M3 re-test (Phase F opening, on the real `pipeline-content.json`) | **1/1 — M3 closed**, the last open misconception. Third consecutive check where the "automatic" distractor missed |
 
 ## Session log (Track A)
 

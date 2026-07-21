@@ -36,6 +36,7 @@ answer, not just recognize it.
 | 2026-07-20 | C8 — Phase C post-build (6 scenario questions on the built system) | A / Phase C | 3/6 | ✓ write-then-raise rationale, gold staleness (rejected the "automatic" plant — 2 more kills), the wheel-change process (his own earlier question, retained). ✗ wholetext latency (picked "different code path" over data-indistinguishability), string-value coercion (**M7 opened**), civil-date rationale (credited Direct Lake, a platform non-requirement — the *wrong-mechanism* axis again) |
 | 2026-07-20 | Phase D pre-build (M6 + M7 re-tests + 2 concept checks) | A / Phase D | **4/4** | **M6 + M7 both closed.** M6: parallel silver = safe, *different tables* (rejected his B7 overcorrection) AND named sequencing as a capacity choice, not correctness. M7: string value → quarantine (rejected the coercion trap). Also ✓ gate-between-silver-and-gold, ✓ no-semantic-refresh (Direct Lake reads Delta). No new misconceptions |
 | 2026-07-21 | E1.5 — Direct Lake vs Import vs DirectQuery (pre-build, the #1 drill) | A / Phase E | **4/4** | ✓ freshness by reframe (no copy), ✓ fallback trigger = SQL view, ✓ "Direct Lake only" = fail-loudly proof, ✓ Import-copy vs DL-transcode. Beat the "automatic" plant twice (auto-refresh distractor on both freshness and Import-vs-DL) and the M2-echo layer-conflation distractor ("schema lakehouse needs DL-only"). Asked for a deeper view-fallback example — engaged, not a gap. No new misconceptions |
+| 2026-07-21 | M3 re-test (Phase F opening, against the real `pipeline-content.json`) | A / Phase F | 1/1 | **M3 closed — the last open misconception.** Predicted the *silent* failure (runs green against dev's objects), rejecting the "Fabric remaps GUIDs on Update all" plant and the wrong-layer permissions answer. **Third consecutive check where the "automatic" distractor failed to land.** One factual sub-question left for F6 to settle empirically (see M3) |
 
 ---
 
@@ -66,7 +67,7 @@ round-trip to SQL. A non-schema lakehouse can serve Direct Lake perfectly well.
 **Why it matters:** conflating a storage-layout choice with a query-mode choice — two
 different layers of the stack.
 
-### M3 — "Prod is populated by binding it to `main` and clicking Update all" ⬜ open
+### M3 — "Prod is populated by binding it to `main` and clicking Update all" ✅ closed (2026-07-21, at Phase F)
 
 **Believed:** deploy to production by setting up Git integration on `ws-energy-prod`
 pointing at `main`, then pulling with *Update all*.
@@ -111,6 +112,32 @@ it or not.
 
 **Re-test at:** Phase F (before building the deploy) and Phase G — **open this file and ask
 him to find what breaks.** Far better than re-asking the multiple-choice.
+
+**✅ Closed 2026-07-21, at the opening of Phase F.** Re-tested against the real committed
+artifact rather than a multiple-choice abstraction: the two hardcoded GUIDs were put on screen
+and the scenario asked was *"bind `ws-energy-prod` to `main`, Update all, run `pl_ingest_ree`
+in prod — what happens?"* Distractors included the signature **"Fabric remaps the GUIDs
+automatically during Update all"** plant and a wrong-layer permissions answer. Answered
+**runs green against dev's objects** — the silent-success model, which is the whole point of
+the misconception. Counts as closed: correct, new framing, after the correction, with the
+automatic-remap trap explicitly on the table. **This is the third consecutive check where the
+"…happens automatically" distractor failed to land** (C1.5 ×2, Phase D pre-build, here) —
+the axis that defined M1/M3/M5 now looks genuinely worked through, not just recognized.
+One cold pass remains in the Phase G full-bank drill (drill A5).
+
+**⚠️ Open factual question, to be settled empirically at F6 — not a gap in his model.** Two
+of our own documents disagree about whether the *lakehouse sink* fails loudly or silently
+writes to dev. This entry says it would not error; the tracker's ID table calls
+`workspaceId: 00000000-…` a **same-workspace placeholder**, which would mean prod resolves the
+sink to *prod workspace + dev artifactId*, finds nothing, and errors. Both cannot be true.
+The **connection** half is not in doubt — connections are tenant-level and owned by Gonzalo,
+so prod would genuinely reach REE through dev's connection.
+
+M3's verdict is unaffected either way (the identity, gating and prod-writability arguments
+each disqualify Git-binding prod on their own), but *silently wrong* vs *loudly broken* is the
+moral of the story, so it is worth knowing. **F6's two-pass bootstrap is a free natural
+experiment**: the first prod deploy necessarily runs before prod's lakehouse GUID exists to be
+substituted. Record the observed behaviour there and correct whichever document is wrong.
 
 ### M4 — "The watermark is what makes a re-run safe" ✅ closed (2026-07-17, at B8)
 
