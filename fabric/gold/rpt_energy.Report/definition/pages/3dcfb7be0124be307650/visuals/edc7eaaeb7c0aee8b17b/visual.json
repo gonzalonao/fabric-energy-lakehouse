@@ -23,11 +23,11 @@
                       "Entity": "fact_demand_daily"
                     }
                   },
-                  "Property": "Demand YoY %"
+                  "Property": "Demand YoY % (R12)"
                 }
               },
-              "queryRef": "fact_demand_daily.Demand YoY %",
-              "nativeQueryRef": "Demand YoY %"
+              "queryRef": "fact_demand_daily.Demand YoY % (R12)",
+              "nativeQueryRef": "Demand YoY % (R12)"
             }
           ]
         }
@@ -42,7 +42,7 @@
                     "Entity": "fact_demand_daily"
                   }
                 },
-                "Property": "Demand YoY %"
+                "Property": "Demand YoY % (R12)"
               }
             },
             "direction": "Descending"

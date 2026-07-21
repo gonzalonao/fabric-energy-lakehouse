@@ -57,11 +57,11 @@
                       "Entity": "fact_demand_daily"
                     }
                   },
-                  "Property": "Total Demand"
+                  "Property": "Total Demand (Complete Months)"
                 }
               },
-              "queryRef": "fact_demand_daily.Total Demand",
-              "nativeQueryRef": "Total Demand"
+              "queryRef": "fact_demand_daily.Total Demand (Complete Months)",
+              "nativeQueryRef": "Total Demand (Complete Months)"
             }
           ]
         }

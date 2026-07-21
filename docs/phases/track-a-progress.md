@@ -247,9 +247,10 @@ Done criteria:
       **Deviation:** end date serialized as `2027-07-31`, not the intended `2026-07-31`
       (capacity window); harmless (capacity expires ~2026-07-31 and D3 finishes this week),
       to trim next time in the Schedule pane. Screenshot `d2-master-schedule.png` pending)*
-- [ ] D3 — two-day green proof (scheduled runs) *(first scheduled master run fires
-      2026-07-22 08:00 Madrid; passive — capture two consecutive scheduled greens with
-      **Run kind = Scheduled** visible, while Phase E proceeds)*
+- [~] D3 — two-day green proof (scheduled runs) *(**1 of 2 captured**: first unattended run
+      fired 2026-07-21 08:00 Madrid and went green — `d3-scheduled-green-1.png`, **Run kind =
+      Scheduled** visible (the column that proves it; *Submitted by* shows Gonzalo's name even
+      for scheduled runs). Second green due 2026-07-22 08:00; passive while Phase E proceeds)*
 - [ ] D4 — review + evidence + 🎓 check
 
 Done criteria:
@@ -275,10 +276,12 @@ Done criteria:
       `dim_technology` is the exact DISTINCT set, gate enforces non-null keys). `dim_indicator`
       intentionally **disconnected** — facts carry no indicator column. `dim_date` marked as
       date table on `[date]`)*
-- [x] E4 — DAX measures, sanity-checked *(9 measures: Total/Peak Demand, Demand YoY %,
-      Renewables Share %, Avg Price (€/MWh), Avg Price 30D, plus helpers Total Generation,
-      Min/Max Price. **Verified against the C7 SQL proof** — Renewables Share % for 2024-03
-      renders 65.7% at 1-decimal format = the 65.69% the star join and MLV both produced)*
+- [x] E4 — DAX measures, sanity-checked *(**12 measures**: Total/Peak Demand,
+      Demand YoY % (R12), Total Demand (Complete Months), Data Through, Renewables Share %,
+      Total Generation, Avg Price (€/MWh), Avg Price 30D, Min/Max Price. **Verified against
+      the C7 SQL proof** — Renewables Share % for 2024-03 renders 65.7% at 1-decimal format =
+      the 65.69% the star join and MLV both produced. Three measures added/rewritten
+      2026-07-21 — see *Model-layer fixes* below)*
 - [~] E5 — 3-page report `rpt_energy` *(basic visuals built for all three pages — Demand,
       Generation mix, Prices. **Formatting deferred to Power BI Desktop** (web editor too
       slow for polish) → see TODOs)*
@@ -299,14 +302,40 @@ does **not** support calculated columns, so any derived column must be added in
 `nb_gold_build` (Spark), not the model — the same "shape it in the lake" rule that keeps us
 off SQL views. Guide text to be corrected at E7.
 
+**Model-layer fixes shipped 2026-07-21 (in Git, not in the report).** Two of the caveats
+visible in `e6-report-rendered.png` were *model* defects, not formatting, so they were fixed
+in TMDL and pulled with *Update all* — which means the Desktop pass downloads a model that is
+already correct instead of re-doing DAX in two places:
+
+- **`Demand YoY %` → `Demand YoY % (R12)`.** The original was unguarded, so an unfiltered card
+  compared two windows with different amounts of loaded data (it read 40.5%). Replaced with a
+  **self-contained rolling 12 complete months vs the 12 before**, anchored to the last loaded
+  fact date via `EOMONTH(LastLoaded, -1)` and isolated from the slicer with
+  `REMOVEFILTERS(dim_date)`. Equal spans, both fully loaded, by construction.
+- **`Total Demand (Complete Months)`** (new) — the monthly trend dived at the right edge
+  because the current month is partial. Inside a month bucket `MAX(dim_date[date])` *is* that
+  month's last calendar day, so comparing it to the last loaded fact date is a one-line
+  completeness test — no new columns, which matters because **Direct Lake supports none**.
+  Blank at grand total by design.
+- **`Data Through`** (new) — freshness stamp taking the **earliest** of the three facts' last
+  loaded dates ("every fact is loaded at least through here"); the max would hide one lagging
+  indicator behind two current ones. Keeps daily-refresh freshness visible on the report now
+  that the partial month is hidden.
+
+Both report visuals were rebound in the same commit — Power BI binds by measure *name*
+(`queryRef` / `nativeQueryRef`), so a rename must move with the report or the visual breaks.
+
 **TODOs carried (raised at E5, deferred by decision 2026-07-21):**
-1. **Report formatting in Power BI Desktop**, then republish — including three fixes found
-   in the basic build: (a) year slicer offers **2027** (empty future calendar years) and
-   (b) the **Avg Price 30D line bleeds 30 days past the data** — both fixed by one
-   report-level filter `dim_date[date] on or before TODAY()` (optionally also guard the 30D
-   measure with `IF(ISBLANK([Avg Price (€/MWh)]), BLANK(), …)`); (c) the generation-mix
+1. **Report formatting in Power BI Desktop**, then republish — remaining items: (a) year
+   slicer offers **2027** (empty future calendar years) and (b) the **Avg Price 30D line
+   bleeds 30 days past the data** — both fixed by one report-level filter
+   `dim_date[date] on or before TODAY()` (the 30D measure is already guarded with
+   `IF(ISBLANK([Avg Price (€/MWh)]), BLANK(), …)`, `7ed4748`); (c) the generation-mix
    stacked area has **16 technologies at once** — unreadable legend; interim fix is
-   Legend = `dim_technology[is_renewable]`.
+   Legend = `dim_technology[is_renewable]`; (d) `Min Price` / `Max Price` carry no
+   `formatString`. *Better fix for (a) than a report filter:* build `dim_date` from the
+   actual data range in `nb_gold_build` instead of a fixed 5-year calendar — kills empty
+   future years for every consumer, not just this report. Requires a gold rerun cycle.
 2. **Gold polish (optional):** add a `renewable_label` string column ("Renewable" /
    "Non-renewable") to `nb_gold_build` so the legend reads in words instead of True/False;
    optionally a verified ~6-bucket `technology_group`. Requires a short gold rerun cycle.
