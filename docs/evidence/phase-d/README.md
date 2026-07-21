@@ -16,6 +16,10 @@ Screenshots proving the orchestration layer (`pl_daily_refresh`). Catalogued as 
 |---|---|
 | `d2-master-schedule.png` | The daily 08:00 Europe/Madrid trigger now lives on `pl_daily_refresh`, with `pl_ingest_daily`'s own schedule disabled — so ingestion runs once per morning rather than twice (standalone + via the master's Invoke). Both changes serialize into Git as `.schedules` files. |
 
-## D3 — scheduled proof
+## D3 — scheduled proof (1 of 2)
 
-*(pending — two consecutive scheduled greens with **Run kind = Scheduled** visible. Note: "Submitted by" shows Gonzalo's name even for scheduled runs, so **Run kind** is the column that actually proves the schedule fired.)*
+| File | What it proves |
+|---|---|
+| `d3-scheduled-green-1.png` | **The master pipeline runs itself.** Monitor row: `pl_daily_refresh` · **Succeeded** · Pipeline · `07/21/2026, 8:00 AM` · **Run kind = Scheduled**. First fully unattended end-to-end run — ingest → 3× silver → DQ gate → gold rebuild → MLV refresh — with nobody clicking anything. **`Run kind` is the load-bearing column**: *Submitted by* shows Gonzalo's name even for scheduled runs, so it can't distinguish a trigger from a manual start. |
+
+*(Second consecutive green due 2026-07-22 08:00 → `d3-scheduled-green-2.png`, which closes D3.)*
