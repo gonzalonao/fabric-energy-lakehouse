@@ -1,0 +1,96 @@
+table fact_price_hourly
+	lineageTag: a0081988-205e-473f-b697-6188bea3ccdf
+	sourceLineageTag: [gold].[fact_price_hourly]
+
+	measure 'Avg Price (€/MWh)' = AVERAGE(fact_price_hourly[price_eur_mwh])
+		formatString: 0.00
+		lineageTag: 7a7e8a9c-d94c-439e-98bf-49298b73a90b
+
+		changedProperty = Name
+
+		changedProperty = FormatString
+
+	measure 'Avg Price 30D' =
+			
+			AVERAGEX(
+			    DATESINPERIOD(dim_date[date], MAX(dim_date[date]), -30, DAY),
+			    [Avg Price (€/MWh)]
+			)
+		formatString: 0.00
+		lineageTag: 999fd6b1-71b3-4ba6-96df-2e802ddcda60
+
+		changedProperty = Name
+
+		changedProperty = FormatString
+
+	measure 'Min Price' = MIN(fact_price_hourly[price_eur_mwh])
+		lineageTag: 5bee8774-d5ee-48dd-8927-044b4a7e01af
+
+		changedProperty = Name
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Max Price' = MAX(fact_price_hourly[price_eur_mwh])
+		lineageTag: 6489d413-a097-48a9-8e37-af96732baeb8
+
+		changedProperty = Name
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column datetime_utc
+		dataType: dateTime
+		formatString: General Date
+		lineageTag: 0b75ab07-ce88-4dfc-87c2-6ac358e02137
+		sourceLineageTag: datetime_utc
+		summarizeBy: none
+		sourceColumn: datetime_utc
+
+		annotation SummarizationSetBy = Automatic
+
+	column date
+		dataType: dateTime
+		formatString: General Date
+		lineageTag: 96b86b08-32f0-4ea5-bdef-272baab713ff
+		sourceLineageTag: date
+		summarizeBy: none
+		sourceColumn: date
+
+		annotation SummarizationSetBy = Automatic
+
+	column series
+		dataType: string
+		lineageTag: e8548e3c-5748-4575-a8a9-e34f2db19fa2
+		sourceLineageTag: series
+		summarizeBy: none
+		sourceColumn: series
+
+		annotation SummarizationSetBy = Automatic
+
+	column period_minutes
+		dataType: int64
+		formatString: 0
+		lineageTag: 30a8c829-2b1d-4fd8-99ed-4eced14f5189
+		sourceLineageTag: period_minutes
+		summarizeBy: sum
+		sourceColumn: period_minutes
+
+		annotation SummarizationSetBy = Automatic
+
+	column price_eur_mwh
+		dataType: double
+		lineageTag: a7c64ef8-337a-4ecf-97be-b73dc92fd70a
+		sourceLineageTag: price_eur_mwh
+		summarizeBy: sum
+		sourceColumn: price_eur_mwh
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	partition fact_price_hourly = entity
+		mode: directLake
+		source
+			entityName: fact_price_hourly
+			schemaName: gold
+			expressionSource: 'DirectLake - lh_energy'
+

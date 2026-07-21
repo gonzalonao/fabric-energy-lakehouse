@@ -1,0 +1,61 @@
+table fact_demand_daily
+	lineageTag: f95aaed2-5a95-4af1-9cff-fca1ac9b0e86
+	sourceLineageTag: [gold].[fact_demand_daily]
+
+	measure 'Total Demand' = SUM(fact_demand_daily[demand_mwh])
+		formatString: #,0
+		lineageTag: 500059ff-438e-4c75-a4b4-f0f8fdb9d43e
+
+		changedProperty = Name
+
+		changedProperty = FormatString
+
+	measure 'Peak Demand' = MAX(fact_demand_daily[demand_mwh])
+		formatString: #,0
+		lineageTag: d572a4ac-5399-46fe-b2ec-e942c2a82dde
+
+		changedProperty = Name
+
+		changedProperty = FormatString
+
+	measure 'Demand YoY %' =
+			
+			DIVIDE(
+			    [Total Demand] - CALCULATE([Total Demand], DATEADD(dim_date[date], -1, YEAR)),
+			    CALCULATE([Total Demand], DATEADD(dim_date[date], -1, YEAR))
+			)
+		formatString: 0.0%;-0.0%;0.0%
+		lineageTag: b40d736c-f981-4ca2-979d-29f4f66bd466
+
+		changedProperty = Name
+
+		changedProperty = FormatString
+
+	column date
+		dataType: dateTime
+		formatString: General Date
+		lineageTag: 75b10a0c-acc2-4702-8759-c08630cecbf9
+		sourceLineageTag: date
+		summarizeBy: none
+		sourceColumn: date
+
+		annotation SummarizationSetBy = Automatic
+
+	column demand_mwh
+		dataType: double
+		lineageTag: c9debf42-1b25-4d77-b802-1161b8602394
+		sourceLineageTag: demand_mwh
+		summarizeBy: sum
+		sourceColumn: demand_mwh
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	partition fact_demand_daily = entity
+		mode: directLake
+		source
+			entityName: fact_demand_daily
+			schemaName: gold
+			expressionSource: 'DirectLake - lh_energy'
+

@@ -1,0 +1,20 @@
+relationship 51f4608a-4d37-c1ff-8ae5-295ce4042db1
+	relyOnReferentialIntegrity
+	fromColumn: fact_demand_daily.date
+	toColumn: dim_date.date
+
+relationship 0204aa3f-8b62-9d3c-bc52-b4db9db7aca8
+	relyOnReferentialIntegrity
+	fromColumn: fact_generation_daily.date
+	toColumn: dim_date.date
+
+relationship 8e0e6b38-d0ef-a5b0-76a6-606e4439a628
+	relyOnReferentialIntegrity
+	fromColumn: fact_generation_daily.technology
+	toColumn: dim_technology.technology
+
+relationship 9a00b95f-a8c3-8882-bc8f-dcce5b5c350a
+	relyOnReferentialIntegrity
+	fromColumn: fact_price_hourly.date
+	toColumn: dim_date.date
+

@@ -1,0 +1,30 @@
+table dim_technology
+	lineageTag: a94269aa-f6e5-404b-90c2-7d4ae796de7f
+	sourceLineageTag: [gold].[dim_technology]
+
+	column technology
+		dataType: string
+		lineageTag: bf25419d-9f1b-48b3-b219-919c386305bb
+		sourceLineageTag: technology
+		summarizeBy: none
+		sourceColumn: technology
+
+		annotation SummarizationSetBy = Automatic
+
+	column is_renewable
+		dataType: boolean
+		formatString: """TRUE"";""TRUE"";""FALSE"""
+		lineageTag: 0f5a12a1-6fdb-4056-afb1-24a2f6345c41
+		sourceLineageTag: is_renewable
+		summarizeBy: none
+		sourceColumn: is_renewable
+
+		annotation SummarizationSetBy = Automatic
+
+	partition dim_technology = entity
+		mode: directLake
+		source
+			entityName: dim_technology
+			schemaName: gold
+			expressionSource: 'DirectLake - lh_energy'
+

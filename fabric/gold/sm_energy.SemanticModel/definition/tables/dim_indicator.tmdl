@@ -1,0 +1,56 @@
+table dim_indicator
+	lineageTag: 70da1379-322f-4dc9-8858-b7a682e363e1
+	sourceLineageTag: [gold].[dim_indicator]
+
+	column indicator
+		dataType: string
+		lineageTag: 0604d590-295f-428d-9e1a-18412de430e9
+		sourceLineageTag: indicator
+		summarizeBy: none
+		sourceColumn: indicator
+
+		annotation SummarizationSetBy = Automatic
+
+	column source_path
+		dataType: string
+		lineageTag: 27d0e7dc-0a72-494f-8099-fb7744ad05ec
+		sourceLineageTag: source_path
+		summarizeBy: none
+		sourceColumn: source_path
+
+		annotation SummarizationSetBy = Automatic
+
+	column silver_table
+		dataType: string
+		lineageTag: c8f79d36-4b64-4dc2-aea7-d5f3e477b76a
+		sourceLineageTag: silver_table
+		summarizeBy: none
+		sourceColumn: silver_table
+
+		annotation SummarizationSetBy = Automatic
+
+	column grain
+		dataType: string
+		lineageTag: d0014b11-1c80-48b3-b7f1-86bfddcdb29e
+		sourceLineageTag: grain
+		summarizeBy: none
+		sourceColumn: grain
+
+		annotation SummarizationSetBy = Automatic
+
+	column unit
+		dataType: string
+		lineageTag: 34037ffd-b86a-4dc3-9f7f-25934cf9d16f
+		sourceLineageTag: unit
+		summarizeBy: none
+		sourceColumn: unit
+
+		annotation SummarizationSetBy = Automatic
+
+	partition dim_indicator = entity
+		mode: directLake
+		source
+			entityName: dim_indicator
+			schemaName: gold
+			expressionSource: 'DirectLake - lh_energy'
+
