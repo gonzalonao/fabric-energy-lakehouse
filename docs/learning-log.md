@@ -35,6 +35,7 @@ answer, not just recognize it.
 | 2026-07-20 | M5 re-test (at C7, before first endpoint use) | A / Phase C | 1/1 | **M5 closed** — a `DELETE` on the endpoint correctly predicted to fail for the architectural reason (read-only projection; writes go through Spark), rejecting both the async-sync trap and the wrong-layer permissions answer |
 | 2026-07-20 | C8 — Phase C post-build (6 scenario questions on the built system) | A / Phase C | 3/6 | ✓ write-then-raise rationale, gold staleness (rejected the "automatic" plant — 2 more kills), the wheel-change process (his own earlier question, retained). ✗ wholetext latency (picked "different code path" over data-indistinguishability), string-value coercion (**M7 opened**), civil-date rationale (credited Direct Lake, a platform non-requirement — the *wrong-mechanism* axis again) |
 | 2026-07-20 | Phase D pre-build (M6 + M7 re-tests + 2 concept checks) | A / Phase D | **4/4** | **M6 + M7 both closed.** M6: parallel silver = safe, *different tables* (rejected his B7 overcorrection) AND named sequencing as a capacity choice, not correctness. M7: string value → quarantine (rejected the coercion trap). Also ✓ gate-between-silver-and-gold, ✓ no-semantic-refresh (Direct Lake reads Delta). No new misconceptions |
+| 2026-07-21 | E1.5 — Direct Lake vs Import vs DirectQuery (pre-build, the #1 drill) | A / Phase E | **4/4** | ✓ freshness by reframe (no copy), ✓ fallback trigger = SQL view, ✓ "Direct Lake only" = fail-loudly proof, ✓ Import-copy vs DL-transcode. Beat the "automatic" plant twice (auto-refresh distractor on both freshness and Import-vs-DL) and the M2-echo layer-conflation distractor ("schema lakehouse needs DL-only"). Asked for a deeper view-fallback example — engaged, not a gap. No new misconceptions |
 
 ---
 
@@ -286,6 +287,43 @@ Questions to run cold at Phase G / end of project. Grows one section per phase.
     show at 08:05, and what has to happen for each to update? (Reach: both stale — the fact
     until `nb_gold_build` reruns, the MLV until its managed refresh; nothing in gold tracks
     silver live, which is why Phase D's master pipeline chains the layers explicitly.)
+
+### Phase D — Orchestration
+
+1. The master chains the three silver notebooks sequentially. If they ran in parallel off the
+   Invoke, would they hit `ConcurrentAppendException`? Why or why not — and what *is* the reason
+   they're sequential? (M6 — different tables ⇒ different Delta logs ⇒ no conflict; sequential is
+   Spark-session/CU contention on 64 CU, a capacity choice, correctness-neutral.)
+2. Why does the DQ gate sit *between* silver and gold, not after gold? (Gate needs typed silver
+   rows to exist; placing it before gold stops a semantic failure before it's summed into
+   facts/MLVs/report — Gold keeps its last-good data.)
+3. The pipeline ends at `nb_gold_mlv` with no "refresh semantic model" step. Why is that correct,
+   not an omission? (Direct Lake reads the gold Delta directly — no import copy to refresh; a
+   refresh step would be an Import-mode reflex.)
+4. The first alert wiring — seven `On fail` arrows into one Outlook activity — never fires. Why,
+   and what's the fix? (Cross-source deps are AND'd ⇒ all seven must be `Failed` at once, impossible
+   in a short-circuiting chain. Fix: single-source funnel on the terminal's `Failed`+`Skipped`
+   (same source ⇒ OR) + a `Fail` activity, because a *succeeding* failure-handler flips the pipeline
+   to `Succeeded`.)
+
+### Phase E — Serving (Direct Lake)
+
+1. Contrast Import / DirectQuery / Direct Lake by *where the data lives* and *how VertiPaq is fed*.
+   Which mode gives freshness AND speed, and by what mechanism? (Direct Lake — transcodes Delta
+   Parquet columns on demand from OneLake + framing; no import copy, no per-visual SQL.)
+2. Gold is overwritten at 08:05; the report is opened at 08:10 with no refresh — does it show the
+   new data, and why? (Yes — reframe repoints the model at the new Parquet files; no copy exists to
+   refresh.)
+3. Name three things that trigger a Direct Lake → DirectQuery fallback. (A SQL-endpoint *view*
+   (no Parquet to transcode); unsupported DAX/model features; capacity guardrail row limits.)
+4. Why "Direct Lake only" over the default "Automatic"? (Fail loudly — a query that can't be served
+   directly errors instead of silently downgrading, so a rendered report *proves* no fallback.)
+5. You base a model table on a SQL-endpoint view instead of the Delta table. Under "Direct Lake
+   only", what happens and why? (Errors — the view has no Parquet files; Direct Lake can't transcode
+   a saved query, so it would need DirectQuery, which "only" mode forbids.)
+6. Fabric auto-made a default semantic model over `lh_energy`. Why build a separate `sm_energy`?
+   (Default = uncurated convenience over every table; the deliverable is a curated gold-only model
+   with designed relationships and DAX measures.)
 
 ## Misconception ledger (cont.)
 
