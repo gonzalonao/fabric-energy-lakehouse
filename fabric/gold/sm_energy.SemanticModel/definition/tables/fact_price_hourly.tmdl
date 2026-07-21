@@ -12,9 +12,10 @@ table fact_price_hourly
 
 	measure 'Avg Price 30D' =
 			
-			AVERAGEX(
-			    DATESINPERIOD(dim_date[date], MAX(dim_date[date]), -30, DAY),
-			    [Avg Price (€/MWh)]
+			IF(
+			    ISBLANK([Avg Price (€/MWh)]),
+			    BLANK(),
+			    AVERAGEX(DATESINPERIOD(dim_date[date], MAX(dim_date[date]), -30, DAY), [Avg Price (€/MWh)])
 			)
 		formatString: 0.00
 		lineageTag: 999fd6b1-71b3-4ba6-96df-2e802ddcda60
