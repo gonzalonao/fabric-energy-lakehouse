@@ -11,10 +11,16 @@ window ends ~2026-07-31.
 funnel fixed + failure-proven, `cc4d6a0`, mirrored 0/0; green-run screenshot pending).
 Pre-build 🎓 check **4/4 — M6 + M7 both closed** (learning log). **D1 ✅ + D2 ✅**
 (`95947d3`, mirrored 0/0). **D3 passive** — first scheduled master run 2026-07-22 08:00,
-capture two consecutive scheduled greens. **Next active work: Phase E — Serving** (Direct
-Lake model + report), running in parallel with the D3 wait. **Phase C ✅ complete
-2026-07-20**. Open misconception: **M3** only (re-test Phase F). Pending screenshots:
-`d1-master-run-green.png`, `d2-master-schedule.png`.
+capture two consecutive scheduled greens.
+
+**🚧 Phase E — Serving, E1–E4 ✅, E5 in progress.** `sm_energy` built as **Direct Lake on
+OneLake** with natural-key relationships, marked date table and 9 measures verified against
+the C7 SQL proof (65.69% renewables, 2024-03). Report `rpt_energy` has basic visuals on all
+three pages; **formatting deferred to Power BI Desktop** (TODOs in the Phase E section).
+E1.5 🎓 **4/4**. **Next: E6** (Direct Lake verification) → E7 (commit + TMDL review).
+
+**Phase C ✅ complete 2026-07-20**. Open misconception: **M3** only (re-test Phase F).
+Pending screenshots: `d1-master-run-green.png`, `d2-master-schedule.png`.
 Phase B ✅ complete (2026-07-17); fully closed 2026-07-19 (`b9-scheduled-run-green.png`).
 Phase A ✅ complete (2026-07-14).
 **DevOps:** org `glopezc443` · project/repo `fabric-energy-lakehouse` · remote `devops`
@@ -254,18 +260,59 @@ Done criteria:
 
 ## Phase E — Serving · [guide](phase-e-serving.md) · ⬜
 
-- [ ] E1 — learn first (Direct Lake vs Import vs DirectQuery)
-- [ ] E1.5 — 🎓 Direct Lake drill check
-- [ ] E2 — custom semantic model `sm_energy`
-- [ ] E3 — relationships, date table, Direct Lake only
-- [ ] E4 — DAX measures, sanity-checked
-- [ ] E5 — 3-page report `rpt_energy`
+- [x] E1 — learn first (Direct Lake vs Import vs DirectQuery) *(taught in depth: transcoding,
+      on-demand column paging, framing/reframe, fallback triggers, default-vs-custom model)*
+- [x] E1.5 — 🎓 Direct Lake drill check *(**4/4** — beat the "automatic" plant twice and the
+      M2-echo layer-conflation distractor; see Learning log)*
+- [x] E2 — custom semantic model `sm_energy` *(**Direct Lake on OneLake**, not Direct Lake on
+      SQL — see deviation below. 3 dims + 3 facts from `gold`; MLVs deliberately excluded
+      (aggregates come from measures); moved to folder `gold`)*
+- [x] E3 — relationships + date table *(4 relationships on **natural keys** — the guide's
+      `_key` names are placeholders, our gold has no surrogates: `fact_demand_daily[date]`,
+      `fact_generation_daily[date]`, `fact_price_hourly[date]` → `dim_date[date]`, and
+      `fact_generation_daily[technology]` → `dim_technology[technology]`. All \*:1, single
+      cross-filter, **Assume referential integrity ON** (safe: calendar is a superset,
+      `dim_technology` is the exact DISTINCT set, gate enforces non-null keys). `dim_indicator`
+      intentionally **disconnected** — facts carry no indicator column. `dim_date` marked as
+      date table on `[date]`)*
+- [x] E4 — DAX measures, sanity-checked *(9 measures: Total/Peak Demand, Demand YoY %,
+      Renewables Share %, Avg Price (€/MWh), Avg Price 30D, plus helpers Total Generation,
+      Min/Max Price. **Verified against the C7 SQL proof** — Renewables Share % for 2024-03
+      renders 65.7% at 1-decimal format = the 65.69% the star join and MLV both produced)*
+- [~] E5 — 3-page report `rpt_energy` *(basic visuals built for all three pages — Demand,
+      Generation mix, Prices. **Formatting deferred to Power BI Desktop** (web editor too
+      slow for polish) → see TODOs)*
 - [ ] E6 — Direct Lake verification (no fallback)
 - [ ] E7 — sync + TMDL review
 - [ ] E8 — 📣 visual showcase in portfolio entry
 
+**Deviation — storage mode (2026-07-21).** Fabric's *New semantic model* dialog now offers
+**Direct Lake on OneLake** vs **Direct Lake on SQL**. Chose **OneLake**: it reads Delta
+straight from OneLake, is *not* coupled to the SQL endpoint (no endpoint metadata-sync lag,
+more efficient DAX plans), and — decisively — **has no DirectQuery fallback path at all**
+([MS Learn](https://learn.microsoft.com/en-us/fabric/fundamentals/direct-lake-overview)).
+That satisfies the phase's "no fallback" decision **by construction** rather than via the
+`DirectLakeBehavior` toggle, which only exists for Direct Lake on SQL. Consequences: the
+guide's E3 step "set Direct Lake behavior → Direct Lake only" is **N/A**; E6's evidence
+becomes *storage mode = Direct Lake on OneLake + all pages render*. Also noted: Direct Lake
+does **not** support calculated columns, so any derived column must be added in
+`nb_gold_build` (Spark), not the model — the same "shape it in the lake" rule that keeps us
+off SQL views. Guide text to be corrected at E7.
+
+**TODOs carried (raised at E5, deferred by decision 2026-07-21):**
+1. **Report formatting in Power BI Desktop**, then republish — including three fixes found
+   in the basic build: (a) year slicer offers **2027** (empty future calendar years) and
+   (b) the **Avg Price 30D line bleeds 30 days past the data** — both fixed by one
+   report-level filter `dim_date[date] on or before TODAY()` (optionally also guard the 30D
+   measure with `IF(ISBLANK([Avg Price (€/MWh)]), BLANK(), …)`); (c) the generation-mix
+   stacked area has **16 technologies at once** — unreadable legend; interim fix is
+   Legend = `dim_technology[is_renewable]`.
+2. **Gold polish (optional):** add a `renewable_label` string column ("Renewable" /
+   "Non-renewable") to `nb_gold_build` so the legend reads in words instead of True/False;
+   optionally a verified ~6-bucket `technology_group`. Requires a short gold rerun cycle.
+
 Done criteria:
-- [ ] Custom Direct Lake model (not default)
+- [x] Custom Direct Lake model (not default) *(`sm_energy`, Direct Lake on OneLake)*
 - [ ] Report renders with no DirectQuery fallback
 - [ ] TMDL measures in repo
 
