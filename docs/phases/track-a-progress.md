@@ -13,11 +13,14 @@ Pre-build 🎓 check **4/4 — M6 + M7 both closed** (learning log). **D1 ✅ + 
 (`95947d3`, mirrored 0/0). **D3 passive** — first scheduled master run 2026-07-22 08:00,
 capture two consecutive scheduled greens.
 
-**🚧 Phase E — Serving, E1–E4 ✅, E5 in progress.** `sm_energy` built as **Direct Lake on
-OneLake** with natural-key relationships, marked date table and 9 measures verified against
-the C7 SQL proof (65.69% renewables, 2024-03). Report `rpt_energy` has basic visuals on all
-three pages; **formatting deferred to Power BI Desktop** (TODOs in the Phase E section).
-E1.5 🎓 **4/4**. **Next: E6** (Direct Lake verification) → E7 (commit + TMDL review).
+**🚧 Phase E — Serving, E1–E4 ✅, E6 ✅, E7 ✅; E5 `[~]`, E8 pending.** `sm_energy` built as
+**Direct Lake on OneLake** with natural-key relationships, marked date table and **12
+measures** verified against the C7 SQL proof (65.69% renewables, 2024-03). Report `rpt_energy`
+has basic visuals on all three pages; **formatting deferred to Power BI Desktop** (TODOs
+below). Two caveats the first render exposed turned out to be **model** defects, not
+formatting — `Demand YoY %` and the partial-month trend — both fixed in TMDL and verified live
+(`770bb07`). All three Phase E done-criteria met. E1.5 🎓 **4/4**.
+**Next: E5 Desktop formatting pass → E8 portfolio showcase.**
 
 **Phase C ✅ complete 2026-07-20**. Open misconception: **M3** only (re-test Phase F).
 Pending screenshots: `d1-master-run-green.png`, `d2-master-schedule.png`.
@@ -285,9 +288,21 @@ Done criteria:
 - [~] E5 — 3-page report `rpt_energy` *(basic visuals built for all three pages — Demand,
       Generation mix, Prices. **Formatting deferred to Power BI Desktop** (web editor too
       slow for polish) → see TODOs)*
-- [ ] E6 — Direct Lake verification (no fallback)
-- [ ] E7 — sync + TMDL review
-- [ ] E8 — 📣 visual showcase in portfolio entry
+- [x] E6 — Direct Lake verification (no fallback) *(all three pages render; on Direct Lake on
+      OneLake there is no fallback path to take, so rendering **is** the proof — no
+      `DirectLakeBehavior` toggle exists in this mode. Two screenshots (`e6-storage-mode.png`,
+      `e6-report-rendered.png`) — they can't be one frame, table properties are only visible
+      from the model page. Stronger still: `mode: directLake` + `DirectLakeOnOneLakeInWeb` are
+      committed in the TMDL)*
+- [x] E7 — sync + TMDL review *(model + report committed (`574f535`); measures read as plain
+      DAX in TMDL — the "definitions reviewable in Git" claim holds; all 4 relationships carry
+      `relyOnReferentialIntegrity`, `dim_date` has `dataCategory: Time` + `isKey`. Review
+      caught auto date/time silently **enabled** (`__PBI_TimeIntelligenceEnabled = 1`) with no
+      web-modeling UI to disable it — fixed via TMDL (`8c02381`). **Guide corrected 2026-07-21**:
+      natural keys vs the `_key` placeholders, Direct Lake on OneLake and the N/A fallback
+      toggle, auto date/time being Desktop-only, no calculated columns, item-level whole-item
+      merging, name-based visual binding, and the real `fabric/gold/…` serialization paths)*
+- [ ] E8 — 📣 visual showcase in portfolio entry *(after the Desktop formatting pass)*
 
 **Deviation — storage mode (2026-07-21).** Fabric's *New semantic model* dialog now offers
 **Direct Lake on OneLake** vs **Direct Lake on SQL**. Chose **OneLake**: it reads Delta
@@ -342,8 +357,10 @@ Both report visuals were rebound in the same commit — Power BI binds by measur
 
 Done criteria:
 - [x] Custom Direct Lake model (not default) *(`sm_energy`, Direct Lake on OneLake)*
-- [ ] Report renders with no DirectQuery fallback
-- [ ] TMDL measures in repo
+- [x] Report renders with no DirectQuery fallback *(E6 — no fallback path exists in this
+      storage mode, so rendering proves it by construction)*
+- [x] TMDL measures in repo *(12 measures, plain readable DAX under
+      `fabric/gold/sm_energy.SemanticModel/definition/tables/*.tmdl`)*
 
 ## Phase F — CI/CD · [guide](phase-f-cicd.md) · ⬜
 
@@ -706,3 +723,29 @@ Scores, misconceptions and the drill bank live in **[`docs/learning-log.md`](../
   typed-package/thin-notebook trade-off, the 65.69% star/MLV cross-check. **Awaiting
   Gonzalo's review of the draft; the branch merges at Phase G. Next: Phase D —
   Orchestration (D1 master pipeline; M6/M7 re-tests due).**
+- **2026-07-21 — two report caveats diagnosed to the model layer; E6 + E7 closed.** The first
+  scheduled `pl_daily_refresh` fired unattended at 08:00 and went green — **D3 is 1 of 2**,
+  second due 2026-07-22. Then the two defects visible in `e6-report-rendered.png` were traced
+  and fixed (`770bb07`), and the finding is that **neither was a formatting problem**:
+  `Demand YoY %` was a bare `DATEADD` ratio with no opinion about whether its two windows were
+  comparable (data starts 2023-01, the calendar runs to 2027, so an unfiltered card divided
+  spans of different coverage and reported 40.5%), and the monthly trend dived at the right
+  edge because the current month is partial. Replaced with `Demand YoY % (R12)` — rolling 12
+  complete months vs the 12 before, anchored to the last loaded fact date, isolated from the
+  slicer with `REMOVEFILTERS(dim_date)` (load-bearing: the year slicer filters
+  `dim_date[year]`, which `DATESBETWEEN` on `[date]` would not override) — plus
+  `Total Demand (Complete Months)`, which exploits the fact that `MAX(dim_date[date])` inside
+  a month bucket *is* that month's month-end, so the completeness test costs one line and no
+  new column (**Direct Lake supports none**). Added `Data Through` to put the freshness the
+  hidden month used to signal back explicitly, taking the **earliest** of the three facts'
+  last loaded dates so one lagging indicator can't hide behind two current ones. Both report
+  visuals rebound in the same commit — Power BI binds by measure *name*, not lineage tag.
+  Verified live after *Update all*: measures present, YoY now a plausible single digit, line
+  ends at June. **Honesty note:** the mechanism I first recorded for the exact 40.5% figure
+  couldn't be reproduced from the TMDL, so the fix was verified against the live number rather
+  than asserted from the arithmetic — the evidence README was corrected accordingly.
+  **E7 guide corrections shipped**: `phase-e-serving.md` was written pre-OneLake and had seven
+  wrong or missing things (`_key` placeholder joins, the N/A `DirectLakeBehavior` toggle,
+  auto date/time as a phantom web-modeling checkbox, no-calculated-columns, whole-item
+  merging, name-based visual binding, `fabric/gold/…` paths). **Next: E5 Desktop formatting
+  pass, then E8; D3's second green tomorrow 08:00.**
