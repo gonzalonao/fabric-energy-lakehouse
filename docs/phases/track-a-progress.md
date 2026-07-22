@@ -400,10 +400,35 @@ what actually happens and correct whichever document is wrong.
       `InteractiveBrowserCredential`; `deploy-prod.yml` still ships, gated on
       `vars.SPN_ENABLED`. Track B (own tenant, Gonzalo is admin) is where the SPN path gets
       demonstrated for real)*
-- [ ] F2 — IDs collected + prod value set *(prod workspace GUID pending from Gonzalo; dev
-      workspace + dev `lh_energy` already in the ID table above. **Prod's lakehouse GUID
-      cannot exist yet** — the first deploy creates it, hence F6's two-pass bootstrap)*
-- [ ] F3 — deploy code (`scripts/deploy.py`, `parameter.yml`, workflow)
+- [x] F2 — IDs collected + prod value set *(prod workspace `30ace2e2-4312-491c-831f-f44727888722`.
+      `vl_energy` gained a **`prod` value set** (Fabric commit `9293f86`) — and the file it
+      serialized is more interesting than expected: `{"name":"prod","variableOverrides":[]}`.
+      **A value set stores only overrides, not a copy of every variable**, so prod's is empty
+      and still fully functional; both variables fall through to `variables.json`. The seam
+      exists with zero duplication. `settings.json`'s `valueSetsOrder` — the empty slot Phase B
+      flagged — is now `["prod"]`. **Prod's lakehouse GUID was never collected and doesn't need
+      to be:** see the F3 note on `$items`)*
+- [x] F3 — deploy code (`scripts/deploy.py`, `parameter.yml`, workflow)
+      *([PR #7](https://github.com/gonzalonao/fabric-energy-lakehouse/pull/7) → `c23d263`;
+      ruff + `mypy --strict` (8 files) + 26 tests green. Three findings that changed the
+      phase:*
+  - ***The two-pass bootstrap is gone.*** `$items.Lakehouse.lh_energy.$id` resolves **after**
+        the target item is created, so prod's lakehouse GUID need not exist before the deploy
+        that uses it. The guide's F6 assumed two passes were unavoidable — they aren't.
+  - ***Pipelines need no lakehouse parameterization at all.*** fabric-cicd re-points
+        activities referencing same-workspace items automatically. This corrects a half-truth
+        in the ID table above: "workspace IDs never need substitution" holds for **pipelines**
+        (all-zeros placeholder) and **fails for notebooks**, which pin a literal
+        `default_lakehouse_workspace_id`. Notebooks are the only items in `parameter.yml`.
+  - ***One risk flagged rather than discovered later:*** dev's notebooks carry
+        `6cabfc1b-836e-…` and dev's pipelines `8bdb6c16-94fa-…` for the *same* lakehouse —
+        the same 16 bytes in a different order. If `$id` yields the canonical form the
+        notebook binding may land wrong; **F7 checks a deployed notebook** and swaps in a
+        literal if so. Documented inline in `parameter.yml`.
+
+  *`unpublish_all_orphan_items` is opt-in behind `--remove-orphans` (it deletes), and is only
+  safe while `ITEM_TYPES_IN_SCOPE` stays exhaustive — an omitted type would survive in prod
+  after being deleted from the repo.)*
 - [ ] F4 — branch protection on `main`
 - [ ] F5 — gated promotion PR `develop` → `main`
 - [ ] F6 — deploy to prod (+ two-pass bootstrap)
