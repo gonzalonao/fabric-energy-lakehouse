@@ -362,9 +362,10 @@ Done criteria:
 - [x] TMDL measures in repo *(12 measures, plain readable DAX under
       `fabric/gold/sm_energy.SemanticModel/definition/tables/*.tmdl`)*
 
-## Phase F — CI/CD · [guide](phase-f-cicd.md) · ⬜
+## Phase F — CI/CD · [guide](phase-f-cicd.md) · 🚧
 
 *Track A expectation: SPN blocked → documented local `fabric-cicd` fallback.*
+**Confirmed 2026-07-21 at F1** — blocked, and more broadly than predicted (see F1 below).
 
 **M3 closed here (2026-07-21), before any deploy code existed** — re-tested against the real
 `pl_ingest_ree/pipeline-content.json` rather than a multiple-choice: *bind prod to `main`,
@@ -376,8 +377,21 @@ dev depends on how `workspaceId: 00000000-…` resolves, and this tracker's ID t
 learning log currently disagree. The two-pass bootstrap is a free natural experiment — record
 what actually happens and correct whichever document is wrong.
 
-- [ ] F1 — SPN attempt (timeboxed; outcome recorded)
-- [ ] F2 — IDs collected + prod value set
+- [x] F1 — SPN attempt (timeboxed; outcome recorded) *(**blocked at gate 1, wholesale** —
+      `portal.azure.com` → Microsoft Entra ID returns **401 "You don't have access"** on the
+      blade itself, and the App-registrations deep link 401s identically. So it is *not* the
+      predicted `Users can register applications = No` toggle but the broader
+      **"Restrict access to Microsoft Entra admin center = Yes"** student-tenant policy;
+      registration was never reachable to be denied, and gates 2–4 are untestable rather than
+      untested. Second-order consequence: the Fabric *"Service principals can use Fabric APIs"*
+      setting is **unverifiable** here, not "disabled" — reading it needs the Admin portal we
+      can't open. **Fallback confirmed:** F6 runs `scripts/deploy.py` locally with
+      `InteractiveBrowserCredential`; `deploy-prod.yml` still ships, gated on
+      `vars.SPN_ENABLED`. Track B (own tenant, Gonzalo is admin) is where the SPN path gets
+      demonstrated for real)*
+- [ ] F2 — IDs collected + prod value set *(prod workspace GUID pending from Gonzalo; dev
+      workspace + dev `lh_energy` already in the ID table above. **Prod's lakehouse GUID
+      cannot exist yet** — the first deploy creates it, hence F6's two-pass bootstrap)*
 - [ ] F3 — deploy code (`scripts/deploy.py`, `parameter.yml`, workflow)
 - [ ] F4 — branch protection on `main`
 - [ ] F5 — gated promotion PR `develop` → `main`

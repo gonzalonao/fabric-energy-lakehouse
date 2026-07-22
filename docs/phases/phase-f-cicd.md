@@ -28,14 +28,39 @@
 
 ### F1 `[YOU]` SPN attempt (timebox: 30 min, then move on)
 
-- `portal.azure.com` → Microsoft Entra ID → **App registrations** → try
-      **New registration** (`spn-fabric-cicd`).
-- If registration itself is blocked → fallback confirmed, skip to F2.
-- If it works: create a client secret, then try to give the SPN access:
-      `ws-energy-prod` → Manage access → Add → the SPN as **Admin**. If the SPN can't
-      be added / API calls 401 later, the tenant switch is off → fallback.
-- Record the outcome here (this paragraph becomes README material):
-      **Outcome:** ☐ SPN works ☐ blocked at: ______
+Four gates; stop at the first that closes and record which.
+
+1. **Registration.** `portal.azure.com` → Microsoft Entra ID → **App registrations** →
+   **New registration** (`spn-fabric-cicd`, single tenant, no redirect URI).
+2. **Credential.** Overview → copy *Application (client) ID* + *Directory (tenant) ID* →
+   **Certificates & secrets** → new client secret. ⚠️ The secret's **Value** is shown once
+   and never again; it goes into GitHub Actions secrets by hand, **never into the repo and
+   never pasted into chat**.
+3. **Tenant switch.** `app.fabric.microsoft.com` → ⚙ → **Admin portal** → Tenant settings →
+   *Service principals can use Fabric APIs*. No **Admin portal** entry = you are not a
+   tenant admin, so you can neither read nor change it.
+4. **Workspace access.** `ws-energy-prod` → Manage access → Add → the SPN as **Admin**.
+   If it never appears in the picker, the switch is off.
+
+**Outcome `[Track A]` — 2026-07-21: ☒ blocked, at gate 1, wholesale.**
+`portal.azure.com` → Microsoft Entra ID returns **HTTP 401 "You don't have access"** on the
+blade itself, and the direct App-registrations deep link
+(`#view/Microsoft_AAD_RegisteredApps/ApplicationsListBlade`) 401s identically. So this is not
+the narrower *"Users can register applications = No"* toggle — the student tenant sets
+**"Restrict access to Microsoft Entra admin center = Yes"**, closing the whole directory
+administration surface to non-admins. App registration was never reachable to be denied.
+Gates 2–4 are therefore untestable, not untested. **Fallback confirmed** — F6 runs
+`scripts/deploy.py` locally with `InteractiveBrowserCredential`.
+
+**Expectation `[Track B]`** — own tenant, so Gonzalo *is* the tenant admin: all four gates
+should pass, and Track B is where the SPN + GitHub Actions path gets demonstrated for real.
+That contrast is the point of running the phases twice; record Track B's outcome in the same
+format so the two sit side by side.
+
+> **Why this is worth 30 minutes even when it fails:** the README can then name the exact
+> directory policy that prevented the enterprise path, rather than implying the pattern was
+> skipped for convenience. A blocked probe that is documented precisely reads as engineering
+> judgement; an undocumented gap reads as a missing feature.
 
 ### F2 `[YOU]` Collect IDs + prod value set
 
@@ -112,9 +137,39 @@
 
 ## Gotchas & deviations
 
-*(expected suspects: fabric-cicd item-type support gaps for preview items — Variable
-Library/MLV handling; two-pass parameter bootstrap; InteractiveBrowserCredential and
-MFA)*
+### 2026-07-21 `[Track A]` — the SPN block is wider than "app registration is off"
+
+The Day-0 risk register predicted the *"Service principals can use Fabric APIs"* tenant
+setting would be the blocker. The real blocker sits one layer earlier and is broader: the
+**Entra admin centre itself** is unreachable (401 on the blade and on the App-registrations
+deep link), so the Fabric-side setting was never the binding constraint.
+
+Two consequences worth stating precisely, because they are different claims:
+
+- **We cannot demonstrate the SPN path on this tenant** — not "we chose not to".
+- **We also cannot report the state of the Fabric SPN setting**, because reading it needs the
+  Admin portal we can't open. The honest README sentence is *"unverifiable on this tenant"*,
+  not *"disabled"*.
+
+`.github/workflows/deploy-prod.yml` still ships (pipeline-as-code is the evidence either way),
+gated `if: vars.SPN_ENABLED == 'true'` so it exists without firing. Track B, on Gonzalo's own
+tenant, is where it actually runs.
+
+### To settle at F6 — does a wrong lakehouse GUID fail loudly or silently?
+
+The two-pass bootstrap gives a free natural experiment: the **first** prod deploy necessarily
+runs before prod's `lh_energy` GUID exists to substitute, so `parameter.yml` still carries
+dev's. Two of our documents disagree about what happens — the learning log (M3) says the
+pipeline resolves dev's lakehouse and silently writes there; this repo's ID table calls
+`workspaceId: 00000000-…` a *same-workspace* placeholder, which would instead make prod look
+for dev's artifact ID inside prod and error.
+
+**Record what actually happens and correct whichever document is wrong.** The connection half
+is not in doubt: connections are tenant-level and owned by Gonzalo, so prod genuinely reaches
+REE through dev's connection either way.
+
+*(Other expected suspects, still open: fabric-cicd item-type support gaps for preview items —
+Variable Library / MLV handling; `InteractiveBrowserCredential` and MFA.)*
 
 ## Session log
 
