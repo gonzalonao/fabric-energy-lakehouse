@@ -28,7 +28,9 @@ Phase B ✅ complete (2026-07-17); fully closed 2026-07-19 (`b9-scheduled-run-gr
 Phase A ✅ complete (2026-07-14).
 **DevOps:** org `glopezc443` · project/repo `fabric-energy-lakehouse` · remote `devops`
 (`https://dev.azure.com/glopezc443/fabric-energy-lakehouse/_git/fabric-energy-lakehouse`).
-**Dev workspace GUID:** `476b58fd-19e3-4c0d-bde7-c3f16d2a6fcf`.
+**Dev workspace GUID:** `476b58fd-19e3-4c0d-bde7-c3f16d2a6fcf` ·
+**Prod workspace GUID:** `30ace2e2-4312-491c-831f-f44727888722` *(collected at F2,
+2026-07-21)*.
 
 ## Item & connection IDs (dev) — Phase F `parameter.yml` input
 
@@ -58,7 +60,16 @@ again on Track B's tenant.
    `conn_fabric_pipelines` currently holds *Gonzalo's user token* — correct in dev, wrong in
    prod (needs SPN or workspace identity).
 3. **`workspaceId` is `00000000-…`** everywhere — a same-workspace placeholder, so workspace IDs
-   need **no** substitution. Only item and connection GUIDs do.
+   need **no** substitution *inside definitions*. Only item and connection GUIDs do.
+   **Don't read that as "the prod workspace GUID isn't needed"** — it is, but in a different
+   role: as the **deploy target** passed to `FabricWorkspace(workspace_id=…)`, which decides
+   *where* items are published. Substitution decides *what the published items point at*.
+   Two distinct jobs, and conflating them is how you end up publishing correctly-parameterized
+   items into the wrong workspace.
+   ⚠️ **The all-zeros placeholder is also exactly why the M3 question is still open** (see the
+   Phase F guide's Gotchas): if it resolves to "current workspace", prod would look for *dev's*
+   lakehouse artifact ID *inside prod* and fail loudly, rather than silently writing to dev.
+   F6's first pass settles it.
 
 *(Item IDs = the item's `logicalId` from its `.platform`. Verified for `lh_energy` and
 `nb_update_watermark`.)*
