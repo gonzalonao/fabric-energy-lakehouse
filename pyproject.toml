@@ -15,6 +15,9 @@ dependencies = []
 
 [dependency-groups]
 dev = ["ruff>=0.6", "mypy>=1.11", "pytest>=8"]
+# Deploy tooling is not a runtime dependency of the wheel — it never runs inside Fabric.
+# Pinned: a deploy tool whose behaviour drifts between runs isn't a deploy tool.
+deploy = ["fabric-cicd==1.2.0", "azure-identity>=1.17"]
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/energy_lakehouse"]
@@ -22,7 +25,7 @@ packages = ["src/energy_lakehouse"]
 [tool.ruff]
 line-length = 88
 target-version = "py311"
-src = ["src", "tests"]
+src = ["src", "tests", "scripts"]
 # Fabric notebooks serialize with mid-file imports and a runtime-injected `spark`; they
 # are not plain modules and are linted in their own right, not here.
 extend-exclude = ["fabric"]
@@ -40,7 +43,13 @@ convention = "google"
 [tool.mypy]
 python_version = "3.11"
 strict = true
-files = ["src"]
+files = ["src", "scripts"]
+
+# fabric-cicd ships no py.typed marker. Scoped to that one module rather than relaxing
+# strictness anywhere else; harmless no-op if the package later ships type information.
+[[tool.mypy.overrides]]
+module = ["fabric_cicd.*"]
+ignore_missing_imports = true
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
