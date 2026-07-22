@@ -1,0 +1,50 @@
+name: Deploy to prod
+
+# Merging to `main` is the release event: `main` is the review gate, and prod is
+# populated exclusively from it. The prod workspace is never bound to Git and never
+# hand-edited — that is the claim this workflow exists to make true.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    # The service-principal path is unavailable on the Track A student tenant: the Entra
+    # admin centre returns 401, so an app registration cannot be created at all (see
+    # docs/phases/phase-f-cicd.md, F1). This job ships regardless — the enterprise
+    # pattern as code is the point — but stays inert until a tenant where a service
+    # principal can exist sets the SPN_ENABLED repository variable to 'true'.
+    #
+    # Until then, prod is deployed by running the same scripts/deploy.py locally with an
+    # interactive login. Same script, same parameter.yml, same commit: only the identity
+    # and the trigger differ.
+    if: vars.SPN_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    steps:
+      - name: Check out the release commit
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install deploy dependencies
+        # Pinned: a deploy tool that silently changes behaviour between runs is not a
+        # deploy tool. Bump deliberately, in a reviewed commit.
+        run: python -m pip install --no-cache-dir fabric-cicd==1.2.0 azure-identity
+
+      - name: Deploy definitions to the prod workspace
+        env:
+          # Created in the Entra app registration, stored as repository secrets. The
+          # secret value is never committed and never printed.
+          FABRIC_CLIENT_ID: ${{ secrets.FABRIC_CLIENT_ID }}
+          FABRIC_CLIENT_SECRET: ${{ secrets.FABRIC_CLIENT_SECRET }}
+          FABRIC_TENANT_ID: ${{ secrets.FABRIC_TENANT_ID }}
+        run: python scripts/deploy.py --environment prod

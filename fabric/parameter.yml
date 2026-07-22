@@ -1,0 +1,61 @@
+# fabric-cicd parameterization: dev definitions -> prod workspace.
+#
+# Read `docs/phases/phase-f-cicd.md` alongside this file. The short version: Fabric
+# bakes dev-tenant GUIDs into item definitions whether you like it or not, and Git
+# integration copies them verbatim. This file is the seam that rewrites them. It is the
+# concrete answer to "why can't prod just be Git-bound to main and pulled?".
+#
+# The `prod` key below must match three things or the substitution silently no-ops:
+#   1. `--environment prod` passed to scripts/deploy.py,
+#   2. the `environment=` argument handed to FabricWorkspace,
+#   3. the Variable Library value set named `prod` (Fabric picks the active value set
+#      by environment name).
+#
+# What is deliberately NOT here, and why:
+#
+# * **Data Pipeline lakehouse references.** fabric-cicd re-points activities that
+#   reference items in the *same* workspace automatically, so `pl_ingest_ree`'s
+#   `artifactId` should resolve to prod's lakehouse without an entry here. Adding a
+#   redundant find/replace risks fighting that mechanism. VERIFY AT F7: open a deployed
+#   pipeline in prod and confirm the sink points at prod's lakehouse.
+#
+# * **Connection GUIDs.** Connections are tenant-level, are not source controlled, and
+#   ours are legitimately reusable across both workspaces: `conn_ree_apidatos` is an
+#   anonymous REST connection to a public API, and `conn_fabric_pipelines` carries
+#   Gonzalo's own token. Reused knowingly, not overlooked. The enterprise answer is a
+#   service principal or workspace identity, which the Track A tenant blocks (F1).
+
+find_replace:
+  # ---------------------------------------------------------------------------------
+  # 1. Notebook -> lakehouse binding.
+  #
+  # Every notebook's `# META` header pins `default_lakehouse` and `known_lakehouses[].id`.
+  # Unlike pipelines, notebooks are NOT auto-re-pointed, so without this entry all seven
+  # notebooks would run in prod while writing into the DEV lakehouse.
+  #
+  # `$items.Lakehouse.lh_energy.$id` resolves AFTER the target item is created, which is
+  # what removes the two-pass bootstrap this phase originally assumed was unavoidable.
+  #
+  # ⚠️ OPEN QUESTION, settle at F6/F7: dev's notebooks carry
+  # `6cabfc1b-836e-43ad-9379-94fa8bdb6c16` while dev's pipelines carry
+  # `8bdb6c16-94fa-9379-43ad-836e6cabfc1b` for the SAME lakehouse — the same 16 bytes in a
+  # different order. If `$id` yields the canonical form, this substitution may write the
+  # wrong encoding into the notebook header. Check a deployed notebook in prod: if its
+  # lakehouse binding is broken, replace this dynamic value with prod's literal
+  # notebook-form GUID, read out of the prod notebook's own META block.
+  - find_value: "6cabfc1b-836e-43ad-9379-94fa8bdb6c16"
+    replace_value:
+      prod: "$items.Lakehouse.lh_energy.$id"
+    item_type: "Notebook"
+
+  # ---------------------------------------------------------------------------------
+  # 2. Notebook -> workspace binding.
+  #
+  # Notebooks hardcode `default_lakehouse_workspace_id` as a literal dev GUID. Pipelines
+  # use `00000000-0000-0000-0000-000000000000` ("current workspace") and need nothing —
+  # which is exactly why "workspace IDs never need substitution" is a half-truth worth
+  # unlearning: it holds for pipelines and fails for notebooks.
+  - find_value: "476b58fd-19e3-4c0d-bde7-c3f16d2a6fcf"
+    replace_value:
+      prod: "$workspace.$id"
+    item_type: "Notebook"
