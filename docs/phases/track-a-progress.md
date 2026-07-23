@@ -483,7 +483,10 @@ Done criteria:
 ## Phase G — Evidence & docs · [guide](phase-g-evidence-docs.md) · ⬜
 
 - [ ] G1 — README overhaul
-- [ ] G2 — consolidated decision log
+- [~] G2 — consolidated decision log *(drafted 2026-07-23 during the prod backfill wait:
+      [`docs/decisions.md`](../decisions.md) — 19 decisions D1–D19 across platform/ingestion/
+      transform/serving/orchestration+release, each with the *why* and the rejected alternative,
+      corrections recorded rather than overwritten. Review at the Phase G pass)*
 - [ ] G3 — capacity metrics + cost notes
 - [ ] G4 — demo recording
 - [ ] G5 — wiki notes
