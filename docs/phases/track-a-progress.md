@@ -434,12 +434,14 @@ what actually happens and correct whichever document is wrong.
       solo-owned repo "require 1 approval" can't be satisfied without an admin self-bypass, so
       the honest gate is the required-PR mechanism itself, not a self-approval that pretends to
       be review. `main` can now only change via a merged PR)*
-- [~] F5 — gated promotion PR `develop` → `main` *([PR #8](https://github.com/gonzalonao/fabric-energy-lakehouse/pull/8),
-      `release: P1 lakehouse v1.0.0`) — **the first ever promotion to `main`**: it was 107
-      commits behind at the bare scaffold, so this merge makes `main` the production baseline
-      and is the commit `deploy-prod.yml` would deploy. **Awaiting Gonzalo's explicit
-      approval — never auto-merged** (the develop→main review gate). 16 deployable items
-      summarized in the PR body)*
+- [x] F5 — gated promotion PR `develop` → `main` *([PR #8](https://github.com/gonzalonao/fabric-energy-lakehouse/pull/8)
+      **merged 2026-07-23**, `main` now at the release commit `3226dd2` — the first production
+      baseline; `main` was 107 commits behind at the bare scaffold. **Merged squash, not a merge
+      commit:** content is identical (deploy + `v1.0.0` tag are correct), but `main` now carries
+      one "release" commit instead of the phase history, and `main`/`develop` no longer share
+      recent ancestry. Cosmetic here — promotions are always PRs, never fast-forwards — and the
+      granular journal lives on `develop` + `docs/phases/`. **Next promotion: use a merge commit**
+      so `main` accumulates release history. Not worth force-fixing (would rewrite `main`))*
 - [ ] F6 — deploy to prod (+ two-pass bootstrap)
 - [ ] F7 — prod verified untouched-by-hand
 - [ ] F8 — wrap-up + tag `v1.0.0` + 🎓 check
