@@ -429,7 +429,11 @@ what actually happens and correct whichever document is wrong.
   *`unpublish_all_orphan_items` is opt-in behind `--remove-orphans` (it deletes), and is only
   safe while `ITEM_TYPES_IN_SCOPE` stays exhaustive — an omitted type would survive in prod
   after being deleted from the repo.)*
-- [ ] F4 — branch protection on `main`
+- [x] F4 — branch protection on `main` *(ruleset `protect-main`, Active: **Require a pull
+      request before merging** + **Block force pushes**. **Approvals deliberately 0** — on a
+      solo-owned repo "require 1 approval" can't be satisfied without an admin self-bypass, so
+      the honest gate is the required-PR mechanism itself, not a self-approval that pretends to
+      be review. `main` can now only change via a merged PR)*
 - [ ] F5 — gated promotion PR `develop` → `main`
 - [ ] F6 — deploy to prod (+ two-pass bootstrap)
 - [ ] F7 — prod verified untouched-by-hand
