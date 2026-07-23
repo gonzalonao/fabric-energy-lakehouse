@@ -454,7 +454,16 @@ what actually happens and correct whichever document is wrong.
       recent ancestry. Cosmetic here — promotions are always PRs, never fast-forwards — and the
       granular journal lives on `develop` + `docs/phases/`. **Next promotion: use a merge commit**
       so `main` accumulates release history. Not worth force-fixing (would rewrite `main`))*
-- [ ] F6 — deploy to prod (+ two-pass bootstrap)
+- [~] F6 — deploy to prod (+ two-pass bootstrap) *(**publish complete 2026-07-23** — all 16
+      items in `ws-energy-prod` via `deploy.py --environment prod` (local interactive auth,
+      SPN blocked). `vl_energy` **active value set → prod** ✓. **No two-pass bootstrap needed** —
+      `$items.Lakehouse.lh_energy.$id` resolves post-create, so the notebook lakehouse binding
+      parameterizes in a single pass (the guide's assumption was obsolete, see F3). **Deploy bug
+      caught + fixed:** first run failed 4 notebooks on stray `__pycache__/*.pyc` — fabric-cicd
+      publishes from the filesystem, so gitignored bytecode leaked in as definition parts.
+      Hardened `deploy.py` with a pre-publish `__pycache__` clean; re-run published all 16
+      (guide Gotchas 2026-07-23). **Remaining for F6/F7:** run `pl_backfill_ree` in prod
+      (off-peak, ~4h) then a manual `pl_daily_refresh` — the prod data load)*
 - [ ] F7 — prod verified untouched-by-hand
 - [ ] F8 — wrap-up + tag `v1.0.0` + 🎓 check
 

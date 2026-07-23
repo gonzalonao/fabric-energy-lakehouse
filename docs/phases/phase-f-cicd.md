@@ -155,6 +155,34 @@ Two consequences worth stating precisely, because they are different claims:
 gated `if: vars.SPN_ENABLED == 'true'` so it exists without firing. Track B, on Gonzalo's own
 tenant, is where it actually runs.
 
+### 2026-07-23 `[Track A]` — F6 first prod deploy: `__pycache__` broke 4 notebooks
+
+The first `deploy.py --environment prod` run authenticated fine and published the variable
+library (active value set correctly switched to `prod`), the lakehouse, the environment, and
+3 notebooks — then **failed on exactly 4 notebooks** with:
+
+> `This item type doesn't support definition parts with empty payload.`
+
+Root cause: **`fabric-cicd` publishes from the filesystem, not from `git`.** It sends every
+file in an item's folder as a *definition part*. Four notebooks
+(`nb_gold_build`, `nb_gold_mlv`, `nb_dq_gate`, `nb_bronze_to_silver`) had a
+`__pycache__/notebook-content.cpython-314.pyc` on disk — gitignored, so invisible to
+`git status` and absent from the repo, but still present locally — and fabric-cicd tried to
+publish the `.pyc` as a notebook part. The 3 notebooks without a cache published fine, which
+is what made the 4-vs-3 split diagnostic.
+
+Fix (committed): `deploy.py` now runs `clean_deploy_directory()` before publishing, removing
+every `__pycache__` under the deploy tree (always regenerable, never source). The re-run
+published all 16 items cleanly.
+
+**Transferable lesson:** a deploy tool that reads the working directory inherits whatever
+untracked cruft lives there. "It's not in git" is not the same as "it won't deploy". Either
+clean the tree or deploy from a fresh checkout.
+
+**Deploy timings (prod, first populate):** most items 1–4 s each; `SemanticModel` ~19 s;
+`Environment` (custom wheel) the long pole at **~5 min** async build. Whole publish ~5.5 min
+after auth.
+
 ### To settle at F6 — does a wrong lakehouse GUID fail loudly or silently?
 
 The two-pass bootstrap gives a free natural experiment: the **first** prod deploy necessarily
