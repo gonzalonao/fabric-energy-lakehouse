@@ -261,17 +261,19 @@ Done criteria:
       **Deviation:** end date serialized as `2027-07-31`, not the intended `2026-07-31`
       (capacity window); harmless (capacity expires ~2026-07-31 and D3 finishes this week),
       to trim next time in the Schedule pane. Screenshot `d2-master-schedule.png` pending)*
-- [~] D3 — two-day green proof (scheduled runs) *(**1 of 2 captured**: first unattended run
-      fired 2026-07-21 08:00 Madrid and went green — `d3-scheduled-green-1.png`, **Run kind =
-      Scheduled** visible (the column that proves it; *Submitted by* shows Gonzalo's name even
-      for scheduled runs). Second green due 2026-07-22 08:00; passive while Phase E proceeds)*
-- [ ] D4 — review + evidence + 🎓 check
+- [x] D3 — two-day green proof (scheduled runs) *(**exceeded — 3 consecutive scheduled greens
+      in one frame**: 07/21, 07/22, 07/23 all 08:00 Madrid, all Succeeded, all **Run kind =
+      Scheduled**, filtered to `pl_daily_refresh` — `d3-scheduled-green-2.png` (plus the
+      isolated first run, `d3-scheduled-green-1.png`). *Run kind* is the load-bearing column;
+      *Submitted by* shows Gonzalo's name even on scheduled runs)*
+- [ ] D4 — review + evidence + 🎓 check *(remaining: definition review + the ~6-question Phase
+      D post-build quiz, incl. M6's orchestration angle cold. Then Phase D ✅)*
 
 Done criteria:
-- [ ] End-to-end run from one trigger
-- [ ] Old schedule disabled, master scheduled
-- [ ] Two consecutive scheduled greens
-- [ ] Single failure alert from master
+- [x] End-to-end run from one trigger *(D1 — `d1-master-run-green.png`)*
+- [x] Old schedule disabled, master scheduled *(D2 — `d2-master-schedule.png`)*
+- [x] Two consecutive scheduled greens *(D3 — exceeded, 3 in one frame)*
+- [x] Single failure alert from master *(D1 — `d1-alert-failure-proof.png`, terminal-skip funnel)*
 
 ## Phase E — Serving · [guide](phase-e-serving.md) · ⬜
 
