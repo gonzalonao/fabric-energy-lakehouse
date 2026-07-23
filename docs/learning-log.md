@@ -387,6 +387,33 @@ Questions to run cold at Phase G / end of project. Grows one section per phase.
    (Only the 4 with a local `__pycache__` — see Q3. The 3 without one published fine; the split
    was diagnostic.)
 
+### Phase G — Capacity & cost (G3)
+
+*Seeded 2026-07-23 from the live Capacity Metrics observation during the prod backfill — a
+teaching moment, not a scored check. The full concept write-up is in
+[`capacity-notes.md`](capacity-notes.md).*
+
+1. A ~4-hour backfill (heavy Spark + pipeline work) ran on the 64-CU trial capacity, yet the
+   Capacity Metrics app showed avg ≈ peak ≈ **1.8%** — a flat line, no spike. Why? (Reach:
+   **background operations are smoothed over a 24-hour window**; interactive over 5 minutes.
+   Fabric amortizes a background job's CU-seconds across 24h, so a heavy-but-short batch shows
+   as a low sustained baseline, not a spike — by design, to keep bursty batch work from
+   tripping throttling. The flat line *is* the correct reading, not a capture failure.)
+2. Fabric bills compute in **CU-seconds**. Why is this pipeline "long in wall-clock but light
+   in CU", and why is that not a contradiction? (Reach: the backfill is **network/latency-bound**
+   — 129 *sequential* HTTP fetches behind REE's Imperva WAF — not compute-bound. Wall-clock time
+   spent waiting on rate-limited I/O consumes almost no CU; duration ≠ cost.)
+3. The trial is **FTL64** (64 CU) and a full day smoothed to <2%. What's the smallest paid SKU
+   that would comfortably run this workload, and what's the argument? (Reach: an **F2** = 2 CU;
+   even a whole day's CU-seconds is a fraction of an F2's daily budget at this cadence — the
+   *trial* SKU size is what Microsoft grants, not what the workload *needs*. Don't confuse the
+   two.)
+4. "No throttling / no overages" on the Throttling tab — what does it prove, and what does it
+   *not*? (Reach: proves the smoothed load stayed inside the CU envelope with no carryforward
+   penalty; does **not** prove the job is cheap in absolute CU-seconds — 24h smoothing can hide
+   a genuinely large consumer under the daily average right up until it exceeds capacity. Read
+   the itemized CU(s), not just the utilization %, to judge cost.)
+
 ## Misconception ledger (cont.)
 
 ### M6 — "Independent parallel writes to one Delta table are fine" ⬜ open (2026-07-17)
