@@ -37,6 +37,7 @@ answer, not just recognize it.
 | 2026-07-20 | Phase D pre-build (M6 + M7 re-tests + 2 concept checks) | A / Phase D | **4/4** | **M6 + M7 both closed.** M6: parallel silver = safe, *different tables* (rejected his B7 overcorrection) AND named sequencing as a capacity choice, not correctness. M7: string value → quarantine (rejected the coercion trap). Also ✓ gate-between-silver-and-gold, ✓ no-semantic-refresh (Direct Lake reads Delta). No new misconceptions |
 | 2026-07-21 | E1.5 — Direct Lake vs Import vs DirectQuery (pre-build, the #1 drill) | A / Phase E | **4/4** | ✓ freshness by reframe (no copy), ✓ fallback trigger = SQL view, ✓ "Direct Lake only" = fail-loudly proof, ✓ Import-copy vs DL-transcode. Beat the "automatic" plant twice (auto-refresh distractor on both freshness and Import-vs-DL) and the M2-echo layer-conflation distractor ("schema lakehouse needs DL-only"). Asked for a deeper view-fallback example — engaged, not a gap. No new misconceptions |
 | 2026-07-21 | M3 re-test (Phase F opening, against the real `pipeline-content.json`) | A / Phase F | 1/1 | **M3 closed — the last open misconception.** Predicted the *silent* failure (runs green against dev's objects), rejecting the "Fabric remaps GUIDs on Update all" plant and the wrong-layer permissions answer. **Third consecutive check where the "automatic" distractor failed to land.** One factual sub-question left for F6 to settle empirically (see M3) |
+| 2026-07-23 | F (mid-phase, while prod backfilled) — CI/CD concepts just built | A / Phase F | 4/6 | ✓ notebook-vs-pipeline parameterization (auto-re-point), ✓ `$items` removes the two-pass (resolves post-create), ✓ orphan-removal coupled to scope completeness, ✓ anonymous-vs-OAuth connection portability. ✗ **two on the wrong-mechanism axis**: thought fabric-cicd *compiles* notebooks (it reads the filesystem verbatim and POSTs files as parts — `M8`), and credited "Git integration unavailable on prod tenant" for prod being release-only (it's a **design choice**; dev+prod share the tenant, so it's available and refused — M3-adjacent). Re-test both at F8 |
 | 2026-07-23 | D4 — Phase D post-build (6 scenario questions on the built orchestration) | A / Phase D | **6/6** | **Second perfect check** (after C1.5). ✓ M6 cold *again* — parallel silver safe, *different tables/logs*, sequencing named as a capacity choice; ✓ the alert-funnel mechanism in full (cross-source AND vs same-source OR, terminal-skip + Fail activity); ✓ gate-before-gold protects last-good data; ✓ no-refresh = Direct Lake reframe, not Import; ✓ Fail activity re-asserts red after a succeeding handler flips the run green; ✓ dependency AND/OR logic stated precisely — and Q2+Q6 both correct shows it's a model, not a memorized fact. Beat the "auto-serialize" and "auto-refresh on schedule" plants. No new misconceptions; **zero open misconceptions remain** |
 
 ---
@@ -353,6 +354,39 @@ Questions to run cold at Phase G / end of project. Grows one section per phase.
    (Default = uncurated convenience over every table; the deliverable is a curated gold-only model
    with designed relationships and DAX measures.)
 
+### Phase F — CI/CD (`fabric-cicd`)
+
+1. `parameter.yml` rewrites lakehouse/workspace GUIDs for **notebooks** but has no pipeline
+   entry, though both reference the lakehouse. Why don't pipelines need one? (fabric-cicd
+   auto-re-points activities referencing *same-workspace* items to the target's equivalents;
+   notebooks pin a literal `default_lakehouse` + `default_lakehouse_workspace_id` it doesn't
+   touch. "Workspace IDs never need substitution" is true for pipelines, false for notebooks.)
+2. The guide assumed a two-pass bootstrap. Why did `$items.Lakehouse.lh_energy.$id` remove it?
+   (It resolves to the target item's GUID *after* that item is created in the deploy — the value
+   needn't exist in advance.)
+3. `__pycache__/*.pyc` is gitignored and not in the repo, yet it broke the prod deploy. How?
+   (**M8** — fabric-cicd reads the *filesystem*, not git, and POSTs every file in an item's
+   folder as a definition part; it does **not** compile anything. The stray `.pyc` shipped
+   verbatim and the API rejected it. Lesson: a deploy inherits untracked cruft from the working
+   tree — "not in git ≠ won't deploy".)
+4. The anonymous REST connection worked in prod at once; the Outlook connection needed
+   re-authentication. General rule? (Anonymous connections carry no credentials → portable
+   across a deploy; OAuth/credentialed ones need re-authorization per environment — the consent
+   doesn't travel with the item definition. An unauthenticated connection makes Fabric reject
+   the pipeline at *submission* with a fast BadRequest.)
+5. `unpublish_all_orphan_items` is opt-in. Beyond "it deletes", why dangerous, and what makes it
+   safe here? (It only acts on types in `ITEM_TYPES_IN_SCOPE`; narrow the scope for a partial
+   deploy and still run it, and it deletes in-scope prod items absent from the partial release.
+   Safe here: off by default + the type list is exhaustive.)
+6. Prod is never Git-bound. Two mechanisms, and why prod uses only one? (Git integration =
+   bidirectional *authoring*, dev ⇄ `develop`; fabric-cicd = one-way *release*, `main` → prod.
+   Prod stays release-only **by design, not because Git integration is unavailable** — on
+   Track A dev+prod share the tenant, so it *is* available and deliberately refused: for
+   parameterization, gating, non-hand-editability, and controlled deploy identity.)
+7. The deploy failed 4 of 7 notebooks but published 3. What single fact explains *which* failed?
+   (Only the 4 with a local `__pycache__` — see Q3. The 3 without one published fine; the split
+   was diagnostic.)
+
 ## Misconception ledger (cont.)
 
 ### M6 — "Independent parallel writes to one Delta table are fine" ⬜ open (2026-07-17)
@@ -430,6 +464,26 @@ producer contract drift worth surfacing. Correct, new wording, after the correct
 miss on the table → closed. One cold pass remains at Phase G (drill #11). *Note the Q5
 civil-date/Direct-Lake wrong-mechanism slip was also re-tested this session (concept Q4, "why
 no semantic-model refresh") and answered correctly — Direct Lake reads Delta directly.*
+
+### M8 — "fabric-cicd transforms/compiles the items it deploys" ⬜ open (2026-07-23, Phase F)
+
+**Believed:** the `__pycache__/*.pyc` deploy failure happened because fabric-cicd *compiled*
+the notebooks during deploy and the compilation failed.
+**Actually:** fabric-cicd performs **no transformation of any kind**. It reads the
+`repository_directory` **from the filesystem** (not from `git`) and POSTs every file in an
+item's folder to the Fabric API as a *definition part*, byte-for-byte. The `.pyc` was already
+on disk from an earlier local import of `notebook-content.py`; the deploy shipped it verbatim
+as a notebook part and the API rejected it ("this item type doesn't support definition parts
+with empty payload"). No compile step exists to fail.
+**Why it matters:** the whole operational lesson — *"not in git ≠ won't deploy"* — depends on
+seeing that the tool reads **disk**, not the repo, and publishes whatever is sitting there.
+Crediting a transform step hides that: the real hazard is that a deploy inherits untracked
+cruft from the working tree. Fix shipped: `deploy.py` strips `__pycache__` before publishing.
+**Axis:** *crediting the wrong mechanism* (see M4's second axis / the Observed-pattern note) —
+same family as the same-session Q6 slip ("prod uses fabric-cicd because Git integration is
+unavailable" — actually a *design choice*; dev+prod share the Track A tenant, so it's
+available and refused). Not ledgered separately; covered by the F8 re-ask.
+**Re-test at:** F8 (Phase F post-build) and Phase G.
 
 *(Phase C–G sections appended at each 🎓 checkpoint.)*
 
