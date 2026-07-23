@@ -464,7 +464,14 @@ what actually happens and correct whichever document is wrong.
       Hardened `deploy.py` with a pre-publish `__pycache__` clean; re-run published all 16
       (guide Gotchas 2026-07-23). **Remaining for F6/F7:** run `pl_backfill_ree` in prod
       (off-peak, ~4h) then a manual `pl_daily_refresh` — the prod data load)*
-- [ ] F7 — prod verified untouched-by-hand
+- [~] F7 — prod verified untouched-by-hand *(**item + binding verification passed 2026-07-23**:
+      all 16 items in prod; `nb_gold_build` binds prod `lh_energy` (GUID-encoding worry
+      **resolved** — `$items` yields the right form); `pl_ingest_ree` sink → prod lakehouse
+      (auto-re-point confirmed). Expected asymmetry noted: dev's empty `bronze` workspace folder
+      is absent in prod — Git doesn't track empty dirs and it holds no items, so it correctly
+      doesn't deploy; **not** to be hand-created (prod-never-hand-edited). **Remaining:** the
+      prod data proof — run `pl_backfill_ree` then `pl_daily_refresh` in prod (off-peak, ~4h),
+      open `rpt_energy` in prod rendering prod data)*
 - [ ] F8 — wrap-up + tag `v1.0.0` + 🎓 check
 
 Done criteria:

@@ -36,13 +36,13 @@ find_replace:
   # `$items.Lakehouse.lh_energy.$id` resolves AFTER the target item is created, which is
   # what removes the two-pass bootstrap this phase originally assumed was unavoidable.
   #
-  # ⚠️ OPEN QUESTION, settle at F6/F7: dev's notebooks carry
-  # `6cabfc1b-836e-43ad-9379-94fa8bdb6c16` while dev's pipelines carry
+  # ✅ RESOLVED at F7 (2026-07-23). The encoding worry below turned out unfounded: after the
+  # prod deploy, `nb_gold_build` opened in prod with `lh_energy` correctly attached as its
+  # default lakehouse. So `$id` yields whatever encoding the notebook header needs and the
+  # binding resolves — no literal-GUID fallback required. (For the record, the worry was:
+  # dev's notebooks carry `6cabfc1b-836e-43ad-9379-94fa8bdb6c16` while dev's pipelines carry
   # `8bdb6c16-94fa-9379-43ad-836e6cabfc1b` for the SAME lakehouse — the same 16 bytes in a
-  # different order. If `$id` yields the canonical form, this substitution may write the
-  # wrong encoding into the notebook header. Check a deployed notebook in prod: if its
-  # lakehouse binding is broken, replace this dynamic value with prod's literal
-  # notebook-form GUID, read out of the prod notebook's own META block.
+  # different order — so a naive substitution could have written the wrong form. It didn't.)
   - find_value: "6cabfc1b-836e-43ad-9379-94fa8bdb6c16"
     replace_value:
       prod: "$items.Lakehouse.lh_energy.$id"

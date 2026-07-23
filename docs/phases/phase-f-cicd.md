@@ -183,18 +183,37 @@ clean the tree or deploy from a fresh checkout.
 `Environment` (custom wheel) the long pole at **~5 min** async build. Whole publish ~5.5 min
 after auth.
 
-### To settle at F6 — does a wrong lakehouse GUID fail loudly or silently?
+### 2026-07-23 `[Track A]` — F7 verification passed; two questions resolved
 
-The two-pass bootstrap gives a free natural experiment: the **first** prod deploy necessarily
-runs before prod's `lh_energy` GUID exists to substitute, so `parameter.yml` still carries
-dev's. Two of our documents disagree about what happens — the learning log (M3) says the
-pipeline resolves dev's lakehouse and silently writes there; this repo's ID table calls
-`workspaceId: 00000000-…` a *same-workspace* placeholder, which would instead make prod look
-for dev's artifact ID inside prod and error.
+Item-by-item check against dev: **all 16 items present** in `ws-energy-prod`. Spot checks:
 
-**Record what actually happens and correct whichever document is wrong.** The connection half
-is not in doubt: connections are tenant-level and owned by Gonzalo, so prod genuinely reaches
-REE through dev's connection either way.
+- **Notebook → lakehouse binding is correct.** `nb_gold_build` opens in prod with `lh_energy`
+  attached as its default lakehouse → `$items.Lakehouse.lh_energy.$id` resolved to the right
+  encoding. The notebook-vs-pipeline byte-order worry (see `parameter.yml`) was **unfounded**;
+  no literal-GUID fallback needed.
+- **Pipeline sink → prod lakehouse.** `pl_ingest_ree`'s Copy sink points at prod's `lh_energy`,
+  confirming fabric-cicd's same-workspace **auto-re-point** (pipelines aren't in
+  `parameter.yml`, and correctly don't need to be).
+
+**Expected asymmetry — the empty `bronze` workspace folder in dev is absent in prod.** It was
+created by hand at A2 as organizational structure and holds **no items**; Git doesn't track
+empty directories, so it was never committed and fabric-cicd can't recreate it. `gold`/`silver`/
+`orchestration` deployed because they contain items. **Do not hand-create `bronze` in prod** —
+that would break the "prod is never hand-edited" claim, and the bronze *layer* (the `bronze`
+schema + `ctl_watermark` + `Files/bronze/`) is created at runtime by the backfill anyway, not
+by a workspace folder. The asymmetry is deploy fidelity working as designed: prod holds exactly
+what Git holds, nothing hand-made.
+
+### The "wrong lakehouse GUID — loud or silent?" question is now moot
+
+The original plan expected a two-pass bootstrap whose first pass would deploy dev's literal
+lakehouse GUID into prod — a free natural experiment on whether that fails loudly or writes
+silently to dev. **`$items` dynamic resolution removed the two-pass**, so that path never ran:
+parameterization was correct on the first (and only) pass. The question stays academically
+unsettled but is **operationally irrelevant** now — the binding resolves to prod by
+construction. (The learning-log M3 note and the ID-table `00000000-…` wording were never put
+in conflict by a real deploy; leaving both as-is, flagged here.) The connection half was never
+in doubt: connections are tenant-level and owned by Gonzalo.
 
 *(Other expected suspects, still open: fabric-cicd item-type support gaps for preview items —
 Variable Library / MLV handling; `InteractiveBrowserCredential` and MFA.)*
