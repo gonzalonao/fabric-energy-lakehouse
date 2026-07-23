@@ -433,7 +433,12 @@ what actually happens and correct whichever document is wrong.
       request before merging** + **Block force pushes**. **Approvals deliberately 0** — on a
       solo-owned repo "require 1 approval" can't be satisfied without an admin self-bypass, so
       the honest gate is the required-PR mechanism itself, not a self-approval that pretends to
-      be review. `main` can now only change via a merged PR)*
+      be review. **Fix mid-phase (2026-07-23):** the ruleset was first created targeting
+      *"Include default branch"* — but this repo's default is **`develop`**, not `main`, so it
+      protected the wrong branch: `develop` got locked (blocking the direct docs + Fabric-mirror
+      pushes the develop-flow relies on) while `main` sat unprotected. Retargeted by explicit
+      name to `refs/heads/main`. **Lesson:** on develop-flow repos never target "default branch"
+      for `main` protection — the default is `develop`. `main` now changes via merged PR only)*
 - [x] F5 — gated promotion PR `develop` → `main` *([PR #8](https://github.com/gonzalonao/fabric-energy-lakehouse/pull/8)
       **merged 2026-07-23**, `main` now at the release commit `3226dd2` — the first production
       baseline; `main` was 107 commits behind at the bare scaffold. **Merged squash, not a merge
