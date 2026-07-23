@@ -1,0 +1,129 @@
+{
+  "properties": {
+    "activities": [
+      {
+        "type": "Copy",
+        "typeProperties": {
+          "source": {
+            "type": "RestSource",
+            "requestMethod": "GET",
+            "paginationRules": {
+              "supportRFC5988": "true"
+            },
+            "httpRequestTimeout": "00:01:40",
+            "requestInterval": "00.00:00:00.010",
+            "datasetSettings": {
+              "type": "RestResource",
+              "typeProperties": {
+                "relativeUrl": "@concat('/es/datos/', pipeline().parameters.p_indicator_path, '?start_date=', pipeline().parameters.p_start, '&end_date=', pipeline().parameters.p_end, '&time_trunc=', pipeline().parameters.p_time_trunc)"
+              },
+              "schema": [],
+              "externalReferences": {
+                "connection": "3cc793f5-7a71-4133-8102-f88cadcd4458"
+              },
+              "annotations": []
+            }
+          },
+          "sink": {
+            "type": "JsonSink",
+            "formatSettings": {
+              "type": "JsonWriteSettings"
+            },
+            "storeSettings": {
+              "type": "LakehouseWriteSettings"
+            },
+            "datasetSettings": {
+              "type": "Json",
+              "typeProperties": {
+                "location": {
+                  "type": "LakehouseLocation",
+                  "folderPath": {
+                    "value": "@concat('raw/', pipeline().parameters.p_indicator_name, '/', formatDateTime(pipeline().parameters.p_start, 'yyyy'), '/', formatDateTime(pipeline().parameters.p_start, 'MM'))",
+                    "type": "Expression"
+                  },
+                  "fileName": {
+                    "value": "@concat(pipeline().parameters.p_indicator_name, '_', formatDateTime(pipeline().parameters.p_start, 'yyyyMM'), '.json')",
+                    "type": "Expression"
+                  }
+                }
+              },
+              "schema": {},
+              "linkedService": {
+                "name": "lh_energy",
+                "properties": {
+                  "type": "Lakehouse",
+                  "typeProperties": {
+                    "artifactId": "8bdb6c16-94fa-9379-43ad-836e6cabfc1b",
+                    "workspaceId": "00000000-0000-0000-0000-000000000000",
+                    "rootFolder": "Files"
+                  },
+                  "annotations": []
+                }
+              },
+              "annotations": []
+            }
+          },
+          "enableStaging": false
+        },
+        "policy": {
+          "timeout": "0.12:00:00",
+          "retry": 3,
+          "retryIntervalInSeconds": 60,
+          "secureInput": false,
+          "secureOutput": false
+        },
+        "name": "cp_fetch_json",
+        "dependsOn": []
+      },
+      {
+        "type": "Office365Outlook",
+        "typeProperties": {
+          "inputs": {
+            "body": {
+              "To": "@pipeline().libraryVariables.vl_energy_v_alert_email",
+              "Subject": "@concat('[Fabric] Ingest failed: ', pipeline().parameters.p_indicator_name)",
+              "Body": "@concat('Pipeline: pl_ingest_ree', '<br>Indicator: ', pipeline().parameters.p_indicator_name, '<br>Window: ', pipeline().parameters.p_start, ' to ', pipeline().parameters.p_end, '<br>Run ID: ', pipeline().RunId)",
+              "Sensitivity": "",
+              "Importance": "Normal"
+            },
+            "method": "post",
+            "path": "/v2/Mail"
+          }
+        },
+        "name": "mail_failure",
+        "dependsOn": [
+          {
+            "activity": "cp_fetch_json",
+            "dependencyConditions": [
+              "Failed"
+            ]
+          }
+        ]
+      }
+    ],
+    "parameters": {
+      "p_indicator_path": {
+        "type": "string"
+      },
+      "p_indicator_name": {
+        "type": "string"
+      },
+      "p_time_trunc": {
+        "type": "string"
+      },
+      "p_start": {
+        "type": "string"
+      },
+      "p_end": {
+        "type": "string"
+      }
+    },
+    "libraryVariables": {
+      "vl_energy_v_alert_email": {
+        "type": "String",
+        "variableName": "v_alert_email",
+        "libraryName": "vl_energy"
+      }
+    }
+  }
+}

@@ -1,0 +1,61 @@
+table fact_generation_daily
+	lineageTag: 45898db5-6d3c-4d2f-ae88-2a4cc3feba5f
+	sourceLineageTag: [gold].[fact_generation_daily]
+
+	measure 'Renewables Share %' =
+			
+			DIVIDE(
+			    CALCULATE(SUM(fact_generation_daily[generation_mwh]), dim_technology[is_renewable] = TRUE()),
+			    SUM(fact_generation_daily[generation_mwh])
+			)
+		formatString: 0.0%;-0.0%;0.0%
+		lineageTag: 897a80cb-49e5-49aa-b58d-d984135f0b52
+
+		changedProperty = Name
+
+		changedProperty = FormatString
+
+	measure 'Total Generation' = SUM(fact_generation_daily[generation_mwh])
+		lineageTag: 7b73b9bc-d220-446e-a2e6-7e7128d4daca
+
+		changedProperty = Name
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column date
+		dataType: dateTime
+		formatString: General Date
+		lineageTag: 1376ec0d-5ba8-4831-9eb9-af9399eba74b
+		sourceLineageTag: date
+		summarizeBy: none
+		sourceColumn: date
+
+		annotation SummarizationSetBy = Automatic
+
+	column technology
+		dataType: string
+		lineageTag: d173d174-81cc-43fe-aa38-877041a4c60c
+		sourceLineageTag: technology
+		summarizeBy: none
+		sourceColumn: technology
+
+		annotation SummarizationSetBy = Automatic
+
+	column generation_mwh
+		dataType: double
+		lineageTag: 4a90ac58-8bf9-4aac-ac2e-cefb40e8aca6
+		sourceLineageTag: generation_mwh
+		summarizeBy: sum
+		sourceColumn: generation_mwh
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	partition fact_generation_daily = entity
+		mode: directLake
+		source
+			entityName: fact_generation_daily
+			schemaName: gold
+			expressionSource: 'DirectLake - lh_energy'
+

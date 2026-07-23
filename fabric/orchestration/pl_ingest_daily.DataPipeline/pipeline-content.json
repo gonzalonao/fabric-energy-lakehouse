@@ -1,0 +1,208 @@
+{
+  "properties": {
+    "activities": [
+      {
+        "type": "ForEach",
+        "typeProperties": {
+          "isSequential": true,
+          "items": {
+            "value": "@json(activity('nb_chunks').output.result.exitValue)",
+            "type": "Expression"
+          },
+          "activities": [
+            {
+              "type": "InvokePipeline",
+              "typeProperties": {
+                "parameters": {
+                  "p_indicator_path": {
+                    "value": "@item().indicator_path",
+                    "type": "Expression"
+                  },
+                  "p_indicator_name": {
+                    "value": "@item().indicator_name",
+                    "type": "Expression"
+                  },
+                  "p_time_trunc": {
+                    "value": "@item().time_trunc",
+                    "type": "Expression"
+                  },
+                  "p_start": {
+                    "value": "@item().start",
+                    "type": "Expression"
+                  },
+                  "p_end": {
+                    "value": "@item().end",
+                    "type": "Expression"
+                  }
+                },
+                "waitOnCompletion": true,
+                "workspaceId": "00000000-0000-0000-0000-000000000000",
+                "pipelineId": "4f47585b-30ce-947e-4fac-7d2ea13339dd",
+                "operationType": "InvokeFabricPipeline"
+              },
+              "externalReferences": {
+                "connection": "7409c7aa-34fa-4e2a-98a6-f983c750e3f3"
+              },
+              "policy": {
+                "timeout": "0.12:00:00",
+                "retry": 0,
+                "retryIntervalInSeconds": 30,
+                "secureInput": false,
+                "secureOutput": false
+              },
+              "name": "inv_ingest",
+              "dependsOn": []
+            }
+          ]
+        },
+        "name": "fe_chunks",
+        "dependsOn": [
+          {
+            "activity": "nb_chunks",
+            "dependencyConditions": [
+              "Succeeded"
+            ]
+          }
+        ]
+      },
+      {
+        "type": "TridentNotebook",
+        "typeProperties": {
+          "notebookId": "7ec6dc40-6091-aa9e-4141-ce923e668746",
+          "workspaceId": "00000000-0000-0000-0000-000000000000",
+          "parameters": {
+            "p_mode": {
+              "value": "daily",
+              "type": "string"
+            },
+            "p_from": {
+              "value": "",
+              "type": "string"
+            },
+            "p_to": {
+              "value": "",
+              "type": "string"
+            }
+          }
+        },
+        "policy": {
+          "timeout": "0.12:00:00",
+          "retry": 0,
+          "retryIntervalInSeconds": 30,
+          "secureInput": false,
+          "secureOutput": false
+        },
+        "name": "nb_chunks",
+        "dependsOn": []
+      },
+      {
+        "type": "TridentNotebook",
+        "typeProperties": {
+          "notebookId": "e3aee25b-ed44-a622-491c-14d6c55fa8b3",
+          "workspaceId": "00000000-0000-0000-0000-000000000000",
+          "parameters": {
+            "p_indicator": {
+              "value": "demanda_evolucion",
+              "type": "string"
+            },
+            "p_new_end": {
+              "value": {
+                "value": "@concat(formatDateTime(addDays(utcNow(), -1), 'yyyy-MM-dd'), 'T23:59')",
+                "type": "Expression"
+              },
+              "type": "string"
+            }
+          }
+        },
+        "policy": {
+          "timeout": "0.12:00:00",
+          "retry": 0,
+          "retryIntervalInSeconds": 30,
+          "secureInput": false,
+          "secureOutput": false
+        },
+        "name": "nb_wm_demanda",
+        "dependsOn": [
+          {
+            "activity": "fe_chunks",
+            "dependencyConditions": [
+              "Succeeded"
+            ]
+          }
+        ]
+      },
+      {
+        "type": "TridentNotebook",
+        "typeProperties": {
+          "notebookId": "e3aee25b-ed44-a622-491c-14d6c55fa8b3",
+          "workspaceId": "00000000-0000-0000-0000-000000000000",
+          "parameters": {
+            "p_indicator": {
+              "value": "generacion_estructura",
+              "type": "string"
+            },
+            "p_new_end": {
+              "value": {
+                "value": "@concat(formatDateTime(addDays(utcNow(), -1), 'yyyy-MM-dd'), 'T23:59')",
+                "type": "Expression"
+              },
+              "type": "string"
+            }
+          }
+        },
+        "policy": {
+          "timeout": "0.12:00:00",
+          "retry": 0,
+          "retryIntervalInSeconds": 30,
+          "secureInput": false,
+          "secureOutput": false
+        },
+        "name": "nb_wm_generacion",
+        "dependsOn": [
+          {
+            "activity": "nb_wm_demanda",
+            "dependencyConditions": [
+              "Succeeded"
+            ]
+          }
+        ]
+      },
+      {
+        "type": "TridentNotebook",
+        "typeProperties": {
+          "notebookId": "e3aee25b-ed44-a622-491c-14d6c55fa8b3",
+          "workspaceId": "00000000-0000-0000-0000-000000000000",
+          "parameters": {
+            "p_indicator": {
+              "value": "precios_mercados",
+              "type": "string"
+            },
+            "p_new_end": {
+              "value": {
+                "value": "@concat(formatDateTime(addDays(utcNow(), -1), 'yyyy-MM-dd'), 'T23:59')",
+                "type": "Expression"
+              },
+              "type": "string"
+            }
+          }
+        },
+        "policy": {
+          "timeout": "0.12:00:00",
+          "retry": 0,
+          "retryIntervalInSeconds": 30,
+          "secureInput": false,
+          "secureOutput": false
+        },
+        "name": "nb_wm_precios",
+        "dependsOn": [
+          {
+            "activity": "nb_wm_generacion",
+            "dependencyConditions": [
+              "Succeeded"
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

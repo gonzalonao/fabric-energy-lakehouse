@@ -1,0 +1,100 @@
+table fact_demand_daily
+	lineageTag: f95aaed2-5a95-4af1-9cff-fca1ac9b0e86
+	sourceLineageTag: [gold].[fact_demand_daily]
+
+	measure 'Total Demand' = SUM(fact_demand_daily[demand_mwh])
+		formatString: #,0
+		lineageTag: 500059ff-438e-4c75-a4b4-f0f8fdb9d43e
+
+		changedProperty = Name
+
+		changedProperty = FormatString
+
+	/// Total Demand, blanked for any period not fully covered by loaded data.
+	/// MAX(dim_date[date]) inside a month bucket is that month's last calendar day;
+	/// if it runs past the last loaded fact date the bucket is partial, so it is
+	/// omitted rather than plotted as a drop. Blank at grand total by design.
+	measure 'Total Demand (Complete Months)' =
+			VAR LastLoaded = CALCULATE(MAX(fact_demand_daily[date]), REMOVEFILTERS())
+			VAR PeriodEnd = MAX(dim_date[date])
+			RETURN
+			    IF(PeriodEnd <= LastLoaded, [Total Demand])
+		formatString: #,0
+		lineageTag: 7f211e7e-183e-4251-b77a-c3ed7092b90f
+
+		changedProperty = Name
+
+		changedProperty = FormatString
+
+	measure 'Peak Demand' = MAX(fact_demand_daily[demand_mwh])
+		formatString: #,0
+		lineageTag: d572a4ac-5399-46fe-b2ec-e942c2a82dde
+
+		changedProperty = Name
+
+		changedProperty = FormatString
+
+	/// Rolling 12 complete months vs the 12 before, anchored to the last loaded
+	/// date rather than to the filter context. Self-contained on purpose: a YoY
+	/// figure is only meaningful across equal, fully loaded spans, and a card with
+	/// no period selected would otherwise compare windows of different coverage.
+	measure 'Demand YoY % (R12)' =
+			VAR LastLoaded = CALCULATE(MAX(fact_demand_daily[date]), REMOVEFILTERS())
+			VAR CurrEnd = EOMONTH(LastLoaded, -1)
+			VAR CurrStart = EDATE(CurrEnd, -12) + 1
+			VAR PriorEnd = EOMONTH(CurrEnd, -12)
+			VAR PriorStart = EDATE(PriorEnd, -12) + 1
+			VAR Curr =
+			    CALCULATE([Total Demand], REMOVEFILTERS(dim_date), DATESBETWEEN(dim_date[date], CurrStart, CurrEnd))
+			VAR Prior =
+			    CALCULATE([Total Demand], REMOVEFILTERS(dim_date), DATESBETWEEN(dim_date[date], PriorStart, PriorEnd))
+			RETURN
+			    DIVIDE(Curr - Prior, Prior)
+		formatString: 0.0%;-0.0%;0.0%
+		lineageTag: b40d736c-f981-4ca2-979d-29f4f66bd466
+
+		changedProperty = Name
+
+		changedProperty = FormatString
+
+	/// Conservative freshness stamp: the earliest of the three facts' last loaded
+	/// dates, so it reads "every fact is loaded at least through here". Using the
+	/// max instead would hide one lagging indicator behind two current ones.
+	measure 'Data Through' =
+			VAR D = CALCULATE(MAX(fact_demand_daily[date]), REMOVEFILTERS())
+			VAR G = CALCULATE(MAX(fact_generation_daily[date]), REMOVEFILTERS())
+			VAR P = CALCULATE(MAX(fact_price_hourly[date]), REMOVEFILTERS())
+			RETURN
+			    FORMAT(MIN(MIN(D, G), P), "yyyy-MM-dd")
+		lineageTag: c33428a5-433e-4c34-8061-46321df637d8
+
+		changedProperty = Name
+
+	column date
+		dataType: dateTime
+		formatString: General Date
+		lineageTag: 75b10a0c-acc2-4702-8759-c08630cecbf9
+		sourceLineageTag: date
+		summarizeBy: none
+		sourceColumn: date
+
+		annotation SummarizationSetBy = Automatic
+
+	column demand_mwh
+		dataType: double
+		lineageTag: c9debf42-1b25-4d77-b802-1161b8602394
+		sourceLineageTag: demand_mwh
+		summarizeBy: sum
+		sourceColumn: demand_mwh
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	partition fact_demand_daily = entity
+		mode: directLake
+		source
+			entityName: fact_demand_daily
+			schemaName: gold
+			expressionSource: 'DirectLake - lh_energy'
+

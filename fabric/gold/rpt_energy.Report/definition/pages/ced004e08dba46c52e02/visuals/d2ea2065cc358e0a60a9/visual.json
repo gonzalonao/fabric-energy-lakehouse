@@ -1,0 +1,89 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.10.0/schema.json",
+  "name": "d2ea2065cc358e0a60a9",
+  "position": {
+    "x": 9.9376470873668641,
+    "y": 230.55341242691122,
+    "z": 0,
+    "height": 489.92600140718639,
+    "width": 1270.0312977654851,
+    "tabOrder": 0
+  },
+  "visual": {
+    "visualType": "lineChart",
+    "query": {
+      "queryState": {
+        "Category": {
+          "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "dim_date"
+                    }
+                  },
+                  "Property": "date"
+                }
+              },
+              "queryRef": "dim_date.date",
+              "nativeQueryRef": "date",
+              "active": true
+            }
+          ]
+        },
+        "Y": {
+          "projections": [
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "fact_price_hourly"
+                    }
+                  },
+                  "Property": "Avg Price (€/MWh)"
+                }
+              },
+              "queryRef": "fact_price_hourly.Avg Price (€/MWh)",
+              "nativeQueryRef": "Avg Price (€/MWh)"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "fact_price_hourly"
+                    }
+                  },
+                  "Property": "Avg Price 30D"
+                }
+              },
+              "queryRef": "fact_price_hourly.Avg Price 30D",
+              "nativeQueryRef": "Avg Price 30D"
+            }
+          ]
+        }
+      },
+      "sortDefinition": {
+        "sort": [
+          {
+            "field": {
+              "Column": {
+                "Expression": {
+                  "SourceRef": {
+                    "Entity": "dim_date"
+                  }
+                },
+                "Property": "date"
+              }
+            },
+            "direction": "Ascending"
+          }
+        ],
+        "isDefaultSort": true
+      }
+    },
+    "drillFilterOtherVisuals": true
+  }
+}

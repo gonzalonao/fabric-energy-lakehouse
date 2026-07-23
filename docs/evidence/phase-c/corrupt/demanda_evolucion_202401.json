@@ -1,0 +1,60 @@
+{
+ "data": {
+  "type": "Evolución de la demanda",
+  "id": "dem1",
+  "attributes": {
+   "title": "Evolución de la demanda",
+   "last-update": "2025-01-28T16:56:22.000+01:00",
+   "description": null
+  },
+  "meta": {
+   "cache-control": {
+    "cache": "HIT",
+    "expireAt": "2026-08-16T22:11:12"
+   }
+  }
+ },
+ "included": [
+  {
+   "type": "Demanda",
+   "id": "10297",
+   "groupId": null,
+   "attributes": {
+    "title": "Demanda",
+    "description": null,
+    "color": "#ffea00",
+    "icon": null,
+    "type": null,
+    "magnitude": null,
+    "composite": false,
+    "last-update": "2025-01-28T16:56:22.000+01:00",
+    "values": [
+     {
+      "value": -4200.5,
+      "percentage": 1,
+      "datetime": "2024-01-05T00:00:00.000+01:00"
+     },
+     {
+      "value": -1.0,
+      "percentage": 1,
+      "datetime": "2024-01-06T00:00:00.000+01:00"
+     },
+     {
+      "value": -99999.0,
+      "percentage": 1,
+      "datetime": "2024-01-07T00:00:00.000+01:00"
+     },
+     {
+      "value": null,
+      "percentage": 1,
+      "datetime": "2024-01-10T00:00:00.000+01:00"
+     },
+     {
+      "value": 712345.6,
+      "percentage": 1
+     }
+    ]
+   }
+  }
+ ]
+}
