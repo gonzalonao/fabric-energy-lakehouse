@@ -19,11 +19,19 @@
 #   redundant find/replace risks fighting that mechanism. VERIFY AT F7: open a deployed
 #   pipeline in prod and confirm the sink points at prod's lakehouse.
 #
-# * **Connection GUIDs.** Connections are tenant-level, are not source controlled, and
-#   ours are legitimately reusable across both workspaces: `conn_ree_apidatos` is an
-#   anonymous REST connection to a public API, and `conn_fabric_pipelines` carries
-#   Gonzalo's own token. Reused knowingly, not overlooked. The enterprise answer is a
-#   service principal or workspace identity, which the Track A tenant blocks (F1).
+# * **Connection GUIDs.** Connections are tenant-level and not source controlled, so the
+#   GUIDs are reused rather than parameterized. But "reused" is not the same as "portable"
+#   — the F7 prod run taught the distinction (2026-07-23):
+#     - **Anonymous** connections travel fine. `conn_ree_apidatos` (anonymous REST to a
+#       public API) resolved in prod with no action.
+#     - **Credentialed / OAuth** connections do NOT. The Office365Outlook connection on
+#       `pl_ingest_ree`'s `mail_failure` activity had to be **re-authenticated in prod**
+#       before the pipeline would even submit — an unauthenticated OAuth connection makes
+#       Fabric reject the whole pipeline with a submission-time BadRequest (fast fail,
+#       before any activity runs). Same applies to `pl_daily_refresh`'s `alert_on_fail`.
+#     - `conn_fabric_pipelines` carries Gonzalo's own token and worked for the Invoke.
+#   The enterprise answer for the credentialed ones is a service principal or workspace
+#   identity, which the Track A tenant blocks (F1). Re-auth is the manual stand-in.
 
 find_replace:
   # ---------------------------------------------------------------------------------

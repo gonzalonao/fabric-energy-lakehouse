@@ -204,6 +204,35 @@ schema + `ctl_watermark` + `Files/bronze/`) is created at runtime by the backfil
 by a workspace folder. The asymmetry is deploy fidelity working as designed: prod holds exactly
 what Git holds, nothing hand-made.
 
+### 2026-07-23 `[Track A]` — prod backfill blocked on an un-re-authenticated OAuth connection
+
+Triggering `pl_backfill_ree` in prod, **every** `inv_ingest` child failed instantly:
+
+> `Failed to run the Pipeline: Operation returned an invalid status code 'BadRequest'`
+> (child run, `isRetriable: false`, ~76 ms — rejected at *submission*, before any activity)
+
+The Invoke itself was fine — it targeted prod's workspace and prod's `pl_ingest_ree`, passed
+correct parameters, and `conn_fabric_pipelines` (Gonzalo's token) authorised the call. The
+**child** `pl_ingest_ree` was rejected. First guess was the REST connection (`conn_ree_apidatos`,
+dev's GUID, unparameterized) — **wrong**. The actual cause was the **Office365Outlook connection**
+on `pl_ingest_ree`'s `mail_failure` activity: OAuth consent does not travel with a deploy, so the
+connection reference was unauthenticated in prod, and Fabric rejects a pipeline whose connections
+don't all validate — at submission, hence the fast BadRequest. **Fix:** open the activity in prod
+and re-authenticate the connection; the pipeline then submits and runs.
+
+**The transferable rule (now also in `parameter.yml`):**
+
+| Connection kind | Survives a deploy? |
+|---|---|
+| **Anonymous** (e.g. `conn_ree_apidatos` → public REST) | **Yes** — nothing to authorise |
+| **Credentialed / OAuth** (e.g. Office365Outlook) | **No** — must be re-authenticated per environment |
+
+This is the concrete form of the ID table's "connections don't deploy" warning, and it corrects
+the `parameter.yml` assumption that all our connections were "reusable across both workspaces" —
+only the anonymous one is. **Watch for the same on `pl_daily_refresh`'s `alert_on_fail`** at the
+Step-3 daily-refresh run. The enterprise fix is an SPN / workspace identity (blocked here, F1);
+manual re-auth is the Track A stand-in.
+
 ### The "wrong lakehouse GUID — loud or silent?" question is now moot
 
 The original plan expected a two-pass bootstrap whose first pass would deploy dev's literal
