@@ -7,11 +7,11 @@ guides (`phase-*.md`); steps marked `[Track B]` there don't apply here. Sibling 
 **Tenant/capacity:** ESESA/UCAM student tenant · Fabric trial capacity ·
 window ends ~2026-07-31.
 **Git:** Fabric ↔ Azure DevOps repo (`develop`, `/fabric`); GitHub canonical via mirror.
-**Status:** 🚧 **Phase D — Orchestration, D1 ✅ done** (`pl_daily_refresh` built, alert
-funnel fixed + failure-proven, `cc4d6a0`, mirrored 0/0; green-run screenshot pending).
-Pre-build 🎓 check **4/4 — M6 + M7 both closed** (learning log). **D1 ✅ + D2 ✅**
-(`95947d3`, mirrored 0/0). **D3 passive** — first scheduled master run 2026-07-22 08:00,
-capture two consecutive scheduled greens.
+**Status:** ✅ **Phase D — Orchestration COMPLETE (2026-07-23).** `pl_daily_refresh` chains
+the whole medallion from one trigger; alert funnel fixed + failure-proven; D3 exceeded
+(3 consecutive scheduled greens in one frame); D4 review certified + **post-build 🎓 6/6**
+(second perfect check). All four done-criteria met. 🚧 **Now: Phase F — CI/CD (F1–F5 ✅,
+F6 next: deploy to prod).**
 
 **🚧 Phase E — Serving, E1–E4 ✅, E6 ✅, E7 ✅; E5 `[~]`, E8 pending.** `sm_energy` built as
 **Direct Lake on OneLake** with natural-key relationships, marked date table and **12
@@ -244,7 +244,7 @@ Done criteria:
       written at C8)*
 - [x] Gold queries from SQL endpoint (`.sql` proofs) *(C7: `sql/proofs/` + 3 screenshots)*
 
-## Phase D — Orchestration · [guide](phase-d-orchestration.md) · ⬜
+## Phase D — Orchestration · [guide](phase-d-orchestration.md) · ✅
 
 - [x] D1 — master pipeline `pl_daily_refresh` *(Fabric commit `0647f0b`: Invoke
       `pl_ingest_daily` (wait-on-completion) → `nb_silver_demanda/generacion/precios`
@@ -266,8 +266,13 @@ Done criteria:
       Scheduled**, filtered to `pl_daily_refresh` — `d3-scheduled-green-2.png` (plus the
       isolated first run, `d3-scheduled-green-1.png`). *Run kind* is the load-bearing column;
       *Submitted by* shows Gonzalo's name even on scheduled runs)*
-- [ ] D4 — review + evidence + 🎓 check *(remaining: definition review + the ~6-question Phase
-      D post-build quiz, incl. M6's orchestration angle cold. Then Phase D ✅)*
+- [x] D4 — review + evidence + 🎓 check *(2026-07-23: definition review certified — committed
+      `pl_daily_refresh` graph matches the documented design exactly (sequential silver chain,
+      gate between silver/gold, terminal-skip alert funnel `alert_on_fail ← nb_gold_mlv
+      [Failed,Skipped]` + `fail_run`). **Post-build 🎓 quiz 6/6 — second perfect check**: M6
+      cold again, the full alert-funnel AND/OR mechanism, gate placement, Direct Lake no-refresh,
+      the Fail-activity re-assert, and dependency logic — Q2+Q6 both right = a real model, not a
+      memorized fact. Beat the "auto-serialize" and "auto-refresh" plants)*
 
 Done criteria:
 - [x] End-to-end run from one trigger *(D1 — `d1-master-run-green.png`)*
