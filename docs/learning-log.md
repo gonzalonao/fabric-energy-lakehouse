@@ -393,12 +393,12 @@ Questions to run cold at Phase G / end of project. Grows one section per phase.
 teaching moment, not a scored check. The full concept write-up is in
 [`capacity-notes.md`](capacity-notes.md).*
 
-1. A ~4-hour backfill (heavy Spark + pipeline work) ran on the 64-CU trial capacity, yet the
-   Capacity Metrics app showed avg ≈ peak ≈ **1.8%** — a flat line, no spike. Why? (Reach:
+1. A heavy ~4-hour background backfill (Spark + pipeline) runs on a 64-CU capacity. Would it
+   show as a utilization **spike** in the Capacity Metrics app? Why or why not? (Reach: no —
    **background operations are smoothed over a 24-hour window**; interactive over 5 minutes.
    Fabric amortizes a background job's CU-seconds across 24h, so a heavy-but-short batch shows
    as a low sustained baseline, not a spike — by design, to keep bursty batch work from
-   tripping throttling. The flat line *is* the correct reading, not a capture failure.)
+   tripping throttling. A flat utilization line is the correct reading, not a capture failure.)
 2. Fabric bills compute in **CU-seconds**. Why is this pipeline "long in wall-clock but light
    in CU", and why is that not a contradiction? (Reach: the backfill is **network/latency-bound**
    — 129 *sequential* HTTP fetches behind REE's Imperva WAF — not compute-bound. Wall-clock time
