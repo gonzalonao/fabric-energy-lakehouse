@@ -549,7 +549,17 @@ Done criteria:
 
 ## Phase G — Evidence & docs · [guide](phase-g-evidence-docs.md) · ⬜
 
-- [ ] G1 — README overhaul
+- [~] G1 — README overhaul *(rewritten 2026-07-25 for the `v1.0.0` release, `8738394`. The old
+      one still said "Status: in development — the architecture below is the plan" and buried
+      the MLV essay inside the layer bullet list. New structure: status + stack badges + the
+      rendered prod report up top; a **Mermaid architecture diagram** (GitHub renders it
+      natively) with quarantine and the DQ gate as explicit branches; *What this demonstrates*
+      framed around the constraints rather than the tech list; engineering notes linking out to
+      `decisions.md` instead of restating it; **What shipping it actually taught** — the two
+      production-only defects, including the loud-failure-check lesson; quickstart, repo layout,
+      docs index, roadmap, author links. Also corrected the DAX measure count 12 → 11 (the
+      enumerated list always named 11). **Awaiting Gonzalo's review** — read it on GitHub, where
+      the Mermaid and the screenshot render)*
 - [~] G2 — consolidated decision log *(drafted 2026-07-23 during the prod backfill wait:
       [`docs/decisions.md`](../decisions.md) — 19 decisions D1–D19 across platform/ingestion/
       transform/serving/orchestration+release, each with the *why* and the rejected alternative,
