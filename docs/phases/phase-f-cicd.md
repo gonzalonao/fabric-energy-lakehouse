@@ -155,18 +155,94 @@ Two consequences worth stating precisely, because they are different claims:
 gated `if: vars.SPN_ENABLED == 'true'` so it exists without firing. Track B, on Gonzalo's own
 tenant, is where it actually runs.
 
-### To settle at F6 — does a wrong lakehouse GUID fail loudly or silently?
+### 2026-07-23 `[Track A]` — F6 first prod deploy: `__pycache__` broke 4 notebooks
 
-The two-pass bootstrap gives a free natural experiment: the **first** prod deploy necessarily
-runs before prod's `lh_energy` GUID exists to substitute, so `parameter.yml` still carries
-dev's. Two of our documents disagree about what happens — the learning log (M3) says the
-pipeline resolves dev's lakehouse and silently writes there; this repo's ID table calls
-`workspaceId: 00000000-…` a *same-workspace* placeholder, which would instead make prod look
-for dev's artifact ID inside prod and error.
+The first `deploy.py --environment prod` run authenticated fine and published the variable
+library (active value set correctly switched to `prod`), the lakehouse, the environment, and
+3 notebooks — then **failed on exactly 4 notebooks** with:
 
-**Record what actually happens and correct whichever document is wrong.** The connection half
-is not in doubt: connections are tenant-level and owned by Gonzalo, so prod genuinely reaches
-REE through dev's connection either way.
+> `This item type doesn't support definition parts with empty payload.`
+
+Root cause: **`fabric-cicd` publishes from the filesystem, not from `git`.** It sends every
+file in an item's folder as a *definition part*. Four notebooks
+(`nb_gold_build`, `nb_gold_mlv`, `nb_dq_gate`, `nb_bronze_to_silver`) had a
+`__pycache__/notebook-content.cpython-314.pyc` on disk — gitignored, so invisible to
+`git status` and absent from the repo, but still present locally — and fabric-cicd tried to
+publish the `.pyc` as a notebook part. The 3 notebooks without a cache published fine, which
+is what made the 4-vs-3 split diagnostic.
+
+Fix (committed): `deploy.py` now runs `clean_deploy_directory()` before publishing, removing
+every `__pycache__` under the deploy tree (always regenerable, never source). The re-run
+published all 16 items cleanly.
+
+**Transferable lesson:** a deploy tool that reads the working directory inherits whatever
+untracked cruft lives there. "It's not in git" is not the same as "it won't deploy". Either
+clean the tree or deploy from a fresh checkout.
+
+**Deploy timings (prod, first populate):** most items 1–4 s each; `SemanticModel` ~19 s;
+`Environment` (custom wheel) the long pole at **~5 min** async build. Whole publish ~5.5 min
+after auth.
+
+### 2026-07-23 `[Track A]` — F7 verification passed; two questions resolved
+
+Item-by-item check against dev: **all 16 items present** in `ws-energy-prod`. Spot checks:
+
+- **Notebook → lakehouse binding is correct.** `nb_gold_build` opens in prod with `lh_energy`
+  attached as its default lakehouse → `$items.Lakehouse.lh_energy.$id` resolved to the right
+  encoding. The notebook-vs-pipeline byte-order worry (see `parameter.yml`) was **unfounded**;
+  no literal-GUID fallback needed.
+- **Pipeline sink → prod lakehouse.** `pl_ingest_ree`'s Copy sink points at prod's `lh_energy`,
+  confirming fabric-cicd's same-workspace **auto-re-point** (pipelines aren't in
+  `parameter.yml`, and correctly don't need to be).
+
+**Expected asymmetry — the empty `bronze` workspace folder in dev is absent in prod.** It was
+created by hand at A2 as organizational structure and holds **no items**; Git doesn't track
+empty directories, so it was never committed and fabric-cicd can't recreate it. `gold`/`silver`/
+`orchestration` deployed because they contain items. **Do not hand-create `bronze` in prod** —
+that would break the "prod is never hand-edited" claim, and the bronze *layer* (the `bronze`
+schema + `ctl_watermark` + `Files/bronze/`) is created at runtime by the backfill anyway, not
+by a workspace folder. The asymmetry is deploy fidelity working as designed: prod holds exactly
+what Git holds, nothing hand-made.
+
+### 2026-07-23 `[Track A]` — prod backfill blocked on an un-re-authenticated OAuth connection
+
+Triggering `pl_backfill_ree` in prod, **every** `inv_ingest` child failed instantly:
+
+> `Failed to run the Pipeline: Operation returned an invalid status code 'BadRequest'`
+> (child run, `isRetriable: false`, ~76 ms — rejected at *submission*, before any activity)
+
+The Invoke itself was fine — it targeted prod's workspace and prod's `pl_ingest_ree`, passed
+correct parameters, and `conn_fabric_pipelines` (Gonzalo's token) authorised the call. The
+**child** `pl_ingest_ree` was rejected. First guess was the REST connection (`conn_ree_apidatos`,
+dev's GUID, unparameterized) — **wrong**. The actual cause was the **Office365Outlook connection**
+on `pl_ingest_ree`'s `mail_failure` activity: OAuth consent does not travel with a deploy, so the
+connection reference was unauthenticated in prod, and Fabric rejects a pipeline whose connections
+don't all validate — at submission, hence the fast BadRequest. **Fix:** open the activity in prod
+and re-authenticate the connection; the pipeline then submits and runs.
+
+**The transferable rule (now also in `parameter.yml`):**
+
+| Connection kind | Survives a deploy? |
+|---|---|
+| **Anonymous** (e.g. `conn_ree_apidatos` → public REST) | **Yes** — nothing to authorise |
+| **Credentialed / OAuth** (e.g. Office365Outlook) | **No** — must be re-authenticated per environment |
+
+This is the concrete form of the ID table's "connections don't deploy" warning, and it corrects
+the `parameter.yml` assumption that all our connections were "reusable across both workspaces" —
+only the anonymous one is. **Watch for the same on `pl_daily_refresh`'s `alert_on_fail`** at the
+Step-3 daily-refresh run. The enterprise fix is an SPN / workspace identity (blocked here, F1);
+manual re-auth is the Track A stand-in.
+
+### The "wrong lakehouse GUID — loud or silent?" question is now moot
+
+The original plan expected a two-pass bootstrap whose first pass would deploy dev's literal
+lakehouse GUID into prod — a free natural experiment on whether that fails loudly or writes
+silently to dev. **`$items` dynamic resolution removed the two-pass**, so that path never ran:
+parameterization was correct on the first (and only) pass. The question stays academically
+unsettled but is **operationally irrelevant** now — the binding resolves to prod by
+construction. (The learning-log M3 note and the ID-table `00000000-…` wording were never put
+in conflict by a real deploy; leaving both as-is, flagged here.) The connection half was never
+in doubt: connections are tenant-level and owned by Gonzalo.
 
 *(Other expected suspects, still open: fabric-cicd item-type support gaps for preview items —
 Variable Library / MLV handling; `InteractiveBrowserCredential` and MFA.)*

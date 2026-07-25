@@ -5,13 +5,13 @@ guides (`phase-*.md`); steps marked `[Track B]` there don't apply here. Sibling 
 [track-b-progress.md](track-b-progress.md) · definitions: [tracks.md](tracks.md).
 
 **Tenant/capacity:** ESESA/UCAM student tenant · Fabric trial capacity ·
-window ends ~2026-07-31.
+window ends ~2026-08-05 (Fabric UI showed "11 days left" on 2026-07-25).
 **Git:** Fabric ↔ Azure DevOps repo (`develop`, `/fabric`); GitHub canonical via mirror.
-**Status:** 🚧 **Phase D — Orchestration, D1 ✅ done** (`pl_daily_refresh` built, alert
-funnel fixed + failure-proven, `cc4d6a0`, mirrored 0/0; green-run screenshot pending).
-Pre-build 🎓 check **4/4 — M6 + M7 both closed** (learning log). **D1 ✅ + D2 ✅**
-(`95947d3`, mirrored 0/0). **D3 passive** — first scheduled master run 2026-07-22 08:00,
-capture two consecutive scheduled greens.
+**Status:** ✅ **Phase D — Orchestration COMPLETE (2026-07-23).** `pl_daily_refresh` chains
+the whole medallion from one trigger; alert funnel fixed + failure-proven; D3 exceeded
+(3 consecutive scheduled greens in one frame); D4 review certified + **post-build 🎓 6/6**
+(second perfect check). All four done-criteria met. 🚧 **Now: Phase F — CI/CD (F1–F5 ✅,
+F6 next: deploy to prod).**
 
 **🚧 Phase E — Serving, E1–E4 ✅, E6 ✅, E7 ✅; E5 `[~]`, E8 pending.** `sm_energy` built as
 **Direct Lake on OneLake** with natural-key relationships, marked date table and **12
@@ -244,7 +244,7 @@ Done criteria:
       written at C8)*
 - [x] Gold queries from SQL endpoint (`.sql` proofs) *(C7: `sql/proofs/` + 3 screenshots)*
 
-## Phase D — Orchestration · [guide](phase-d-orchestration.md) · ⬜
+## Phase D — Orchestration · [guide](phase-d-orchestration.md) · ✅
 
 - [x] D1 — master pipeline `pl_daily_refresh` *(Fabric commit `0647f0b`: Invoke
       `pl_ingest_daily` (wait-on-completion) → `nb_silver_demanda/generacion/precios`
@@ -259,19 +259,26 @@ Done criteria:
       **disabled** (`.schedules` `enabled:false`), `pl_daily_refresh` **scheduled** Daily
       08:00 `Romance Standard Time`, start 2026-07-21 — so only one ingest per morning.
       **Deviation:** end date serialized as `2027-07-31`, not the intended `2026-07-31`
-      (capacity window); harmless (capacity expires ~2026-07-31 and D3 finishes this week),
+      (capacity window); harmless (capacity expires ~2026-08-05 and D3 finishes this week),
       to trim next time in the Schedule pane. Screenshot `d2-master-schedule.png` pending)*
-- [~] D3 — two-day green proof (scheduled runs) *(**1 of 2 captured**: first unattended run
-      fired 2026-07-21 08:00 Madrid and went green — `d3-scheduled-green-1.png`, **Run kind =
-      Scheduled** visible (the column that proves it; *Submitted by* shows Gonzalo's name even
-      for scheduled runs). Second green due 2026-07-22 08:00; passive while Phase E proceeds)*
-- [ ] D4 — review + evidence + 🎓 check
+- [x] D3 — two-day green proof (scheduled runs) *(**exceeded — 3 consecutive scheduled greens
+      in one frame**: 07/21, 07/22, 07/23 all 08:00 Madrid, all Succeeded, all **Run kind =
+      Scheduled**, filtered to `pl_daily_refresh` — `d3-scheduled-green-2.png` (plus the
+      isolated first run, `d3-scheduled-green-1.png`). *Run kind* is the load-bearing column;
+      *Submitted by* shows Gonzalo's name even on scheduled runs)*
+- [x] D4 — review + evidence + 🎓 check *(2026-07-23: definition review certified — committed
+      `pl_daily_refresh` graph matches the documented design exactly (sequential silver chain,
+      gate between silver/gold, terminal-skip alert funnel `alert_on_fail ← nb_gold_mlv
+      [Failed,Skipped]` + `fail_run`). **Post-build 🎓 quiz 6/6 — second perfect check**: M6
+      cold again, the full alert-funnel AND/OR mechanism, gate placement, Direct Lake no-refresh,
+      the Fail-activity re-assert, and dependency logic — Q2+Q6 both right = a real model, not a
+      memorized fact. Beat the "auto-serialize" and "auto-refresh" plants)*
 
 Done criteria:
-- [ ] End-to-end run from one trigger
-- [ ] Old schedule disabled, master scheduled
-- [ ] Two consecutive scheduled greens
-- [ ] Single failure alert from master
+- [x] End-to-end run from one trigger *(D1 — `d1-master-run-green.png`)*
+- [x] Old schedule disabled, master scheduled *(D2 — `d2-master-schedule.png`)*
+- [x] Two consecutive scheduled greens *(D3 — exceeded, 3 in one frame)*
+- [x] Single failure alert from master *(D1 — `d1-alert-failure-proof.png`, terminal-skip funnel)*
 
 ## Phase E — Serving · [guide](phase-e-serving.md) · ⬜
 
@@ -433,15 +440,64 @@ what actually happens and correct whichever document is wrong.
       request before merging** + **Block force pushes**. **Approvals deliberately 0** — on a
       solo-owned repo "require 1 approval" can't be satisfied without an admin self-bypass, so
       the honest gate is the required-PR mechanism itself, not a self-approval that pretends to
-      be review. `main` can now only change via a merged PR)*
-- [~] F5 — gated promotion PR `develop` → `main` *([PR #8](https://github.com/gonzalonao/fabric-energy-lakehouse/pull/8),
-      `release: P1 lakehouse v1.0.0`) — **the first ever promotion to `main`**: it was 107
-      commits behind at the bare scaffold, so this merge makes `main` the production baseline
-      and is the commit `deploy-prod.yml` would deploy. **Awaiting Gonzalo's explicit
-      approval — never auto-merged** (the develop→main review gate). 16 deployable items
-      summarized in the PR body)*
-- [ ] F6 — deploy to prod (+ two-pass bootstrap)
-- [ ] F7 — prod verified untouched-by-hand
+      be review. **Fix mid-phase (2026-07-23):** the ruleset was first created targeting
+      *"Include default branch"* — but this repo's default is **`develop`**, not `main`, so it
+      protected the wrong branch: `develop` got locked (blocking the direct docs + Fabric-mirror
+      pushes the develop-flow relies on) while `main` sat unprotected. Retargeted by explicit
+      name to `refs/heads/main`. **Lesson:** on develop-flow repos never target "default branch"
+      for `main` protection — the default is `develop`. `main` now changes via merged PR only)*
+- [x] F5 — gated promotion PR `develop` → `main` *([PR #8](https://github.com/gonzalonao/fabric-energy-lakehouse/pull/8)
+      **merged 2026-07-23**, `main` now at the release commit `3226dd2` — the first production
+      baseline; `main` was 107 commits behind at the bare scaffold. **Merged squash, not a merge
+      commit:** content is identical (deploy + `v1.0.0` tag are correct), but `main` now carries
+      one "release" commit instead of the phase history, and `main`/`develop` no longer share
+      recent ancestry. Cosmetic here — promotions are always PRs, never fast-forwards — and the
+      granular journal lives on `develop` + `docs/phases/`. **Next promotion: use a merge commit**
+      so `main` accumulates release history. Not worth force-fixing (would rewrite `main`))*
+- [~] F6 — deploy to prod (+ two-pass bootstrap) *(**publish complete 2026-07-23** — all 16
+      items in `ws-energy-prod` via `deploy.py --environment prod` (local interactive auth,
+      SPN blocked). `vl_energy` **active value set → prod** ✓. **No two-pass bootstrap needed** —
+      `$items.Lakehouse.lh_energy.$id` resolves post-create, so the notebook lakehouse binding
+      parameterizes in a single pass (the guide's assumption was obsolete, see F3). **Deploy bug
+      caught + fixed:** first run failed 4 notebooks on stray `__pycache__/*.pyc` — fabric-cicd
+      publishes from the filesystem, so gitignored bytecode leaked in as definition parts.
+      Hardened `deploy.py` with a pre-publish `__pycache__` clean; re-run published all 16
+      (guide Gotchas 2026-07-23). **Prod data load complete 2026-07-24:** `pl_backfill_ree`
+      green (**3h09m**, 2023-01 → 2026-07-23), then `pl_daily_refresh` green (**18 min** manual)
+      — the full medallion chain running end-to-end on prod data. Durations recorded in
+      [`capacity-notes.md`](../capacity-notes.md))*
+- [~] F7 — prod verified untouched-by-hand *(**item + binding verification passed 2026-07-23**:
+      all 16 items in prod; `nb_gold_build` binds prod `lh_energy` (GUID-encoding worry
+      **resolved** — `$items` yields the right form); `pl_ingest_ree` sink → prod lakehouse
+      (auto-re-point confirmed). Expected asymmetry noted: dev's empty `bronze` workspace folder
+      is absent in prod — Git doesn't track empty dirs and it holds no items, so it correctly
+      doesn't deploy; **not** to be hand-created (prod-never-hand-edited). **Data proof green
+      2026-07-24** (backfill 3h09m + daily refresh 18m, see F6). **Unpredicted finding — prod
+      deployed as a *self-operating* environment:** `pl_daily_refresh` fired **unattended at
+      08:00** the next morning (24 min, green) with no hand-configuration. Fabric serializes a
+      pipeline's schedule into Git as a `.schedules` file (B9, `f233aef`), so `fabric-cicd`
+      published the **active daily trigger** along with the item definition — deployment
+      reproduced the *operational behaviour*, not just the item graph. Strongest F7 evidence
+      yet, and only possible because prod was built from source control rather than clicked
+      together. ⚠️ Prod now consumes capacity daily until the trial lapses (~2026-08-05);
+      disable the schedule if the noise matters. **🔴 DEFECT CAUGHT 2026-07-24 — the semantic
+      model was never re-pointed.** `sm_energy`'s prod *Cloud connections* pane showed
+      `onelake.dfs.fabric.microsoft.com/476b58fd-…/6cabfc1b-…` — **dev's workspace + dev's
+      lakehouse**. Root cause: Direct Lake **on OneLake** stores its source as a Power Query
+      expression in `definition/expressions.tmdl` (`AzureStorage.DataLake("https://…/<ws>/<lh>")`),
+      and fabric-cicd's same-workspace auto-re-point **does not reach inside an M expression** —
+      it's an opaque string, exactly like a notebook's `default_lakehouse`. `parameter.yml`
+      scoped both GUID substitutions to `item_type: "Notebook"`, so the model shipped with dev's
+      URL verbatim and **prod's report rendered dev's data while looking completely healthy**.
+      The silent-wrong-target failure (M3's whole moral) landing in the one item type where
+      nothing throws. **Fix:** both entries broadened to
+      `item_type: ["Notebook", "SemanticModel"]` — the find_values were already correct (the
+      model uses the *notebook* GUID encoding), only the scope was too narrow. `rpt_energy` is
+      unaffected: it binds `byPath: ../sm_energy.SemanticModel`, relative and portable.
+      **Correction to F3's finding:** "pipelines auto-re-point so only notebooks need
+      parameterizing" was half-right — the real rule is *auto-re-point covers structured
+      item references, not GUIDs embedded in free-text payloads*. **Remaining:** redeploy,
+      re-verify the binding shows prod, then open `rpt_energy` in prod)*
 - [ ] F8 — wrap-up + tag `v1.0.0` + 🎓 check
 
 Done criteria:
@@ -453,7 +509,10 @@ Done criteria:
 ## Phase G — Evidence & docs · [guide](phase-g-evidence-docs.md) · ⬜
 
 - [ ] G1 — README overhaul
-- [ ] G2 — consolidated decision log
+- [~] G2 — consolidated decision log *(drafted 2026-07-23 during the prod backfill wait:
+      [`docs/decisions.md`](../decisions.md) — 19 decisions D1–D19 across platform/ingestion/
+      transform/serving/orchestration+release, each with the *why* and the rejected alternative,
+      corrections recorded rather than overwritten. Review at the Phase G pass)*
 - [ ] G3 — capacity metrics + cost notes
 - [ ] G4 — demo recording
 - [ ] G5 — wiki notes

@@ -28,6 +28,7 @@ from __future__ import annotations
 import argparse
 import logging
 import os
+import shutil
 from pathlib import Path
 from typing import Final
 
@@ -64,6 +65,28 @@ ITEM_TYPES_IN_SCOPE: Final[list[str]] = [
 
 #: Repository root is this file's parent's parent; `fabric/` is what Fabric syncs.
 REPOSITORY_DIRECTORY: Final[Path] = Path(__file__).resolve().parent.parent / "fabric"
+
+
+def clean_deploy_directory(directory: Path) -> None:
+    """Remove Python bytecode caches from the deploy tree before publishing.
+
+    `fabric-cicd` publishes from the *filesystem*, not from `git`: every file in an
+    item's folder is sent as a definition part. A stray `__pycache__/*.pyc` is
+    gitignored — invisible to `git status`, never in the repo — yet on disk, so it leaks
+    into the item and the Fabric API rejects it ("this item type doesn't support
+    definition parts with empty payload"). This bit the first prod deploy: four
+    notebooks whose `notebook-content.py` had been imported locally each carried a
+    `.pyc` and failed, while the three without one published fine.
+
+    Only `__pycache__` directories are removed — always regenerable, never source — so
+    this targeted safeguard cannot touch an item definition.
+
+    Args:
+        directory: The repository directory that will be published.
+    """
+    for cache_dir in directory.rglob("__pycache__"):
+        LOGGER.warning("Removing bytecode cache from deploy tree: %s", cache_dir)
+        shutil.rmtree(cache_dir, ignore_errors=True)
 
 
 def build_credential() -> TokenCredential:
@@ -112,6 +135,8 @@ def deploy(environment: str, *, remove_orphans: bool) -> None:
         environment,
         workspace_id,
     )
+
+    clean_deploy_directory(REPOSITORY_DIRECTORY)
 
     workspace = FabricWorkspace(
         workspace_id=workspace_id,
