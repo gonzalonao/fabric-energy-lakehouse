@@ -7,11 +7,17 @@ guides (`phase-*.md`); steps marked `[Track B]` there don't apply here. Sibling 
 **Tenant/capacity:** ESESA/UCAM student tenant · Fabric trial capacity ·
 window ends ~2026-08-05 (Fabric UI showed "11 days left" on 2026-07-25).
 **Git:** Fabric ↔ Azure DevOps repo (`develop`, `/fabric`); GitHub canonical via mirror.
-**Status:** ✅ **Phase D — Orchestration COMPLETE (2026-07-23).** `pl_daily_refresh` chains
-the whole medallion from one trigger; alert funnel fixed + failure-proven; D3 exceeded
-(3 consecutive scheduled greens in one frame); D4 review certified + **post-build 🎓 6/6**
-(second perfect check). All four done-criteria met. 🚧 **Now: Phase F — CI/CD (F1–F5 ✅,
-F6 next: deploy to prod).**
+**Status:** ✅ **Phase F — CI/CD COMPLETE (2026-07-25) · released `v1.0.0`.** Prod is built
+exclusively by `fabric-cicd` from `main`, loaded by running its own deployed pipelines
+(backfill 3h09m + full medallion chain 18m09s), and **self-operating** — the daily schedule
+deployed as part of the item definitions and fires unattended. `rpt_energy` renders prod data
+with no fallback path. Two real deployment defects were found by running the release and fixed
+(`__pycache__` leaking in as definition parts; the Direct Lake semantic model silently keeping
+its **dev** lakehouse binding). Promotion PR #9 merged **with a merge commit**, restoring the
+ancestry F5's squash severed; `v1.0.0` annotated and pushed to both remotes. All four
+done-criteria met; post-build 🎓 **4/6** (M8 + the Q6 slip closed; **M9 opened** — scope of
+evidence). 🚧 **Now: Phase G — Evidence & docs** (G2 drafted, G3 drafted; G1 README next),
+plus the carried Phase E items (E5 Desktop formatting, E8 portfolio).
 
 **🚧 Phase E — Serving, E1–E4 ✅, E6 ✅, E7 ✅; E5 `[~]`, E8 pending.** `sm_energy` built as
 **Direct Lake on OneLake** with natural-key relationships, marked date table and **12
@@ -380,7 +386,7 @@ Done criteria:
 - [x] TMDL measures in repo *(12 measures, plain readable DAX under
       `fabric/gold/sm_energy.SemanticModel/definition/tables/*.tmdl`)*
 
-## Phase F — CI/CD · [guide](phase-f-cicd.md) · 🚧
+## Phase F — CI/CD · [guide](phase-f-cicd.md) · ✅
 
 *Track A expectation: SPN blocked → documented local `fabric-cicd` fallback.*
 **Confirmed 2026-07-21 at F1** — blocked, and more broadly than predicted (see F1 below).
@@ -498,7 +504,7 @@ what actually happens and correct whichever document is wrong.
       parameterizing" was half-right — the real rule is *auto-re-point covers structured
       item references, not GUIDs embedded in free-text payloads*. **Remaining:** redeploy,
       re-verify the binding shows prod, then open `rpt_energy` in prod)*
-- [~] F8 — wrap-up + tag `v1.0.0` + 🎓 check *(**promotion + tag done 2026-07-25.**
+- [x] F8 — wrap-up + tag `v1.0.0` + 🎓 check *(**promotion + tag done 2026-07-25.**
       [PR #9](https://github.com/gonzalonao/fabric-energy-lakehouse/pull/9) merged **with a
       merge commit** (`048772b`, parents `3226dd2` + `01da35d`) — `main` now carries the full
       phase history, and `v1.0.0` is an annotated tag on it, pushed to both remotes.
@@ -516,7 +522,16 @@ what actually happens and correct whichever document is wrong.
       again. *(Also worth recording: an attempted pre-flight check with the deprecated
       three-argument `git merge-tree` reported zero conflicts. That form performs a trivial
       merge, not a real one — use `git merge-tree --write-tree A B`, or a throwaway branch.)*
-      **Remaining:** post-build 🎓 check)*
+      **Post-build 🎓 quiz: 4/6.** Both open items from the mid-phase check **closed** — M8
+      (re-tested on a fresh uncommitted-file scenario; named filesystem-not-git as the *cause*)
+      and the Q6 slip (Track B framing: prod stays release-only **by design** even where Git
+      integration is unrestricted). Also ✓ the schedule deploying as a definition part, beating
+      the "Fabric syncs schedules across copies" plant. Two misses: **M9 opened** — a rendered
+      report taken as proof the model read prod's lakehouse, when it only proves *no fallback*
+      (a loud-failure check cannot detect a wrong-but-valid state — the exact reason the
+      misbinding survived F7); and PR #9's conflicts attributed to stale refs rather than the
+      severed ancestry. **M9 is a new axis — *scope of evidence*** — and the most consequential
+      one yet, because it makes a *passing* check feel like coverage)*
 
 Done criteria:
 - [x] `develop` → `main` PR-gated *(ruleset `protect-main`: required PR + block force pushes;
@@ -568,6 +583,8 @@ Scores, misconceptions and the drill bank live in **[`docs/learning-log.md`](../
 | 2026-07-20 | Phase D pre-build (M6 + M7 re-tests + 2 concept checks) | **4/4** — M6 + M7 both closed |
 | 2026-07-21 | E1.5 — Direct Lake vs Import vs DirectQuery (pre-build, the #1 drill) | **4/4** — beat the "automatic" plant twice and the M2-echo layer-conflation distractor |
 | 2026-07-21 | M3 re-test (Phase F opening, on the real `pipeline-content.json`) | **1/1 — M3 closed**, the last open misconception. Third consecutive check where the "automatic" distractor missed |
+| 2026-07-23 | F mid-phase — CI/CD concepts (during the prod backfill) | 4/6 — **M8** opened + a paired Q6 slip, both on the wrong-mechanism axis |
+| 2026-07-25 | F8 — Phase F post-build (on the shipped release) | 4/6 — **M8 + the Q6 slip both closed**; **M9 opened** (*scope of evidence*: a rendered report read as proof of the model's source). Beat the "Fabric syncs schedules" plant |
 
 ## Session log (Track A)
 

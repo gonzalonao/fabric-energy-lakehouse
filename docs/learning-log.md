@@ -38,6 +38,7 @@ answer, not just recognize it.
 | 2026-07-21 | E1.5 — Direct Lake vs Import vs DirectQuery (pre-build, the #1 drill) | A / Phase E | **4/4** | ✓ freshness by reframe (no copy), ✓ fallback trigger = SQL view, ✓ "Direct Lake only" = fail-loudly proof, ✓ Import-copy vs DL-transcode. Beat the "automatic" plant twice (auto-refresh distractor on both freshness and Import-vs-DL) and the M2-echo layer-conflation distractor ("schema lakehouse needs DL-only"). Asked for a deeper view-fallback example — engaged, not a gap. No new misconceptions |
 | 2026-07-21 | M3 re-test (Phase F opening, against the real `pipeline-content.json`) | A / Phase F | 1/1 | **M3 closed — the last open misconception.** Predicted the *silent* failure (runs green against dev's objects), rejecting the "Fabric remaps GUIDs on Update all" plant and the wrong-layer permissions answer. **Third consecutive check where the "automatic" distractor failed to land.** One factual sub-question left for F6 to settle empirically (see M3) |
 | 2026-07-23 | F (mid-phase, while prod backfilled) — CI/CD concepts just built | A / Phase F | 4/6 | ✓ notebook-vs-pipeline parameterization (auto-re-point), ✓ `$items` removes the two-pass (resolves post-create), ✓ orphan-removal coupled to scope completeness, ✓ anonymous-vs-OAuth connection portability. ✗ **two on the wrong-mechanism axis**: thought fabric-cicd *compiles* notebooks (it reads the filesystem verbatim and POSTs files as parts — `M8`), and credited "Git integration unavailable on prod tenant" for prod being release-only (it's a **design choice**; dev+prod share the tenant, so it's available and refused — M3-adjacent). Re-test both at F8 |
+| 2026-07-25 | F8 — Phase F post-build (6 scenario questions on the shipped release) | A / Phase F | 4/6 | **M8 closed** (uncommitted-file scenario — filesystem-not-git named as cause) and **the Q6 slip closed** (Track B framing — prod release-only *by design*), retiring the wrong-mechanism pair from 07-23. ✓ the schedule deploying as a definition part (beat the "Fabric syncs schedules across copies" plant). ✗ **M9 opened** — took a rendered report as proof the model read prod's lakehouse (it only proves *no fallback*; a loud-failure check can't detect a wrong-but-valid state). ✗ attributed PR #9's add/add conflicts to stale local refs rather than the squash severing ancestry — wrong-mechanism recurrence, covered by drill 11 |
 | 2026-07-23 | D4 — Phase D post-build (6 scenario questions on the built orchestration) | A / Phase D | **6/6** | **Second perfect check** (after C1.5). ✓ M6 cold *again* — parallel silver safe, *different tables/logs*, sequencing named as a capacity choice; ✓ the alert-funnel mechanism in full (cross-source AND vs same-source OR, terminal-skip + Fail activity); ✓ gate-before-gold protects last-good data; ✓ no-refresh = Direct Lake reframe, not Import; ✓ Fail activity re-asserts red after a succeeding handler flips the run green; ✓ dependency AND/OR logic stated precisely — and Q2+Q6 both correct shows it's a model, not a memorized fact. Beat the "auto-serialize" and "auto-refresh on schedule" plants. No new misconceptions; **zero open misconceptions remain** |
 
 ---
@@ -530,7 +531,42 @@ miss on the table → closed. One cold pass remains at Phase G (drill #11). *Not
 civil-date/Direct-Lake wrong-mechanism slip was also re-tested this session (concept Q4, "why
 no semantic-model refresh") and answered correctly — Direct Lake reads Delta directly.*
 
-### M8 — "fabric-cicd transforms/compiles the items it deploys" ⬜ open (2026-07-23, Phase F)
+### M9 — "A passing check proves more than it does" ⬜ open (2026-07-25, F8)
+
+**Believed:** the prod report rendering successfully proved the semantic model was reading
+prod's lakehouse.
+**Actually:** a rendered Direct Lake report proves exactly one thing — **no DirectQuery
+fallback was needed** (and on Direct Lake *on OneLake* no fallback path exists at all, so
+rendering is the no-fallback proof *by construction*). It is completely silent on **which**
+lakehouse was transcoded. The misbound model read a valid lakehouse, with a valid gold star
+schema, holding valid data; every query succeeded because **nothing was broken** — it was
+simply the wrong environment.
+**The rule to hold:**
+> A check that can only fail **loudly** cannot detect a **wrong-but-valid** state.
+
+Every F7 verification was a loud-failure check — 16/16 item inventory (counts items, says
+nothing about their bindings), notebook binding, pipeline sink, report renders. The DQ gate
+can't help either: it runs in the pipeline layer, upstream of the model, and passes identically
+whichever lakehouse the model points at. The only test that catches a silent misbinding is
+**reading the binding**.
+**Why it matters:** this is the axis behind the project's most dangerous class of bug — M3's
+whole moral was *silently wrong beats loudly broken as a hazard*, and here it recurred in the
+one item type where nothing throws. Verification thoroughness is not measured by how many
+checks pass, but by whether any of them could have failed for **this** reason.
+**Axis:** *scope of evidence* — a new one, distinct from the two established axes ("assumes
+it's automatic", "credits the wrong mechanism"). Here the mechanism is understood correctly;
+the error is in what the observation licenses you to conclude. **Quiz form that exposes it:**
+"what would this check still pass on if X were wrong?"
+**Re-test at:** Phase G (full drill bank) and at the first Track B verification pass.
+
+*Same session, second miss — the wrong-mechanism axis again (not ledgered separately, covered
+by drill 11):* PR #9's six add/add conflicts were attributed to **stale local refs** rather than
+the squash having severed `main`'s ancestry. GitHub computes mergeability server-side from the
+pushed refs, so local staleness cannot produce it. Notable because the squash's consequence had
+been explained at F5 and accepted as "cosmetic" — the gap is not the fact but the *causal chain*
+from squash → no merge base → 3-way merge against the scaffold → add/add.
+
+### M8 — "fabric-cicd transforms/compiles the items it deploys" ✅ closed (2026-07-25, at F8)
 
 **Believed:** the `__pycache__/*.pyc` deploy failure happened because fabric-cicd *compiled*
 the notebooks during deploy and the compilation failed.
@@ -548,7 +584,17 @@ cruft from the working tree. Fix shipped: `deploy.py` strips `__pycache__` befor
 same family as the same-session Q6 slip ("prod uses fabric-cicd because Git integration is
 unavailable" — actually a *design choice*; dev+prod share the Track A tenant, so it's
 available and refused). Not ledgered separately; covered by the F8 re-ask.
-**Re-test at:** F8 (Phase F post-build) and Phase G.
+
+**✅ Closed 2026-07-25 (F8 post-build).** Re-tested on a fresh scenario rather than the original
+incident: *"a teammate leaves an uncommitted `notes.txt` inside a semantic model's `definition/`
+folder and runs the deploy — what happens to it?"* The "fabric-cicd compiles the definition and
+discards unrecognized files" distractor was on the table in a new costume. Answered **it is
+uploaded as a definition part and Fabric rejects the item** — the filesystem-not-git mechanism,
+stated as cause rather than recalled as trivia. Correct, new wording, after the correction,
+original miss offered. **The same session also closed the paired Q6 slip** (Track B framing:
+would prod be Git-bound on a tenant with no restrictions? → *no, release-only by design*),
+which retires the wrong-mechanism pair opened on 2026-07-23. One cold pass remains at Phase G
+(drills 3 and 6).
 
 *(Phase C–G sections appended at each 🎓 checkpoint.)*
 
@@ -572,6 +618,15 @@ picked V-Order as the *only* automatic write step (rejecting "all three") and re
 evidence the axis is closed (it's a recognition test, not a cold recall, and M5's *live*
 re-test — the read-only SQL endpoint — is still pending at C7); keep planting. But worth noting
 the Delta-storage sub-area specifically is now solid under adversarial phrasing.
+
+**A third axis emerged at F8 (M9, 2026-07-25): scope of evidence.** Distinct from both of the
+above — the mechanism is understood correctly, and nothing is assumed automatic; the error is in
+what an observation *licenses you to conclude*. A rendered report was read as proof the model
+pointed at prod, when it only ever proved no DirectQuery fallback occurred. This axis is the
+dangerous one for a verification pass, because it makes a *passing* check feel like coverage.
+**So ask counterfactually about the check itself:** "what would this check still pass on, if X
+were wrong?" — the evidence-scope sibling of the "what breaks if you remove X?" question that
+exposed M4.
 
 **A second, related axis emerged at B1.5 (M4): crediting the wrong mechanism.** He knows both
 mechanisms exist and what each does, but attributes the guarantee to the more *visible* one
