@@ -5,7 +5,7 @@ guides (`phase-*.md`); steps marked `[Track B]` there don't apply here. Sibling 
 [track-b-progress.md](track-b-progress.md) · definitions: [tracks.md](tracks.md).
 
 **Tenant/capacity:** ESESA/UCAM student tenant · Fabric trial capacity ·
-window ends ~2026-07-31.
+window ends ~2026-08-05 (Fabric UI showed "11 days left" on 2026-07-25).
 **Git:** Fabric ↔ Azure DevOps repo (`develop`, `/fabric`); GitHub canonical via mirror.
 **Status:** ✅ **Phase D — Orchestration COMPLETE (2026-07-23).** `pl_daily_refresh` chains
 the whole medallion from one trigger; alert funnel fixed + failure-proven; D3 exceeded
@@ -259,7 +259,7 @@ Done criteria:
       **disabled** (`.schedules` `enabled:false`), `pl_daily_refresh` **scheduled** Daily
       08:00 `Romance Standard Time`, start 2026-07-21 — so only one ingest per morning.
       **Deviation:** end date serialized as `2027-07-31`, not the intended `2026-07-31`
-      (capacity window); harmless (capacity expires ~2026-07-31 and D3 finishes this week),
+      (capacity window); harmless (capacity expires ~2026-08-05 and D3 finishes this week),
       to trim next time in the Schedule pane. Screenshot `d2-master-schedule.png` pending)*
 - [x] D3 — two-day green proof (scheduled runs) *(**exceeded — 3 consecutive scheduled greens
       in one frame**: 07/21, 07/22, 07/23 all 08:00 Madrid, all Succeeded, all **Run kind =
@@ -479,7 +479,7 @@ what actually happens and correct whichever document is wrong.
       published the **active daily trigger** along with the item definition — deployment
       reproduced the *operational behaviour*, not just the item graph. Strongest F7 evidence
       yet, and only possible because prod was built from source control rather than clicked
-      together. ⚠️ Prod now consumes capacity daily until the trial lapses (~2026-07-31);
+      together. ⚠️ Prod now consumes capacity daily until the trial lapses (~2026-08-05);
       disable the schedule if the noise matters. **🔴 DEFECT CAUGHT 2026-07-24 — the semantic
       model was never re-pointed.** `sm_energy`'s prod *Cloud connections* pane showed
       `onelake.dfs.fabric.microsoft.com/476b58fd-…/6cabfc1b-…` — **dev's workspace + dev's

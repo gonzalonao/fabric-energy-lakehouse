@@ -2,7 +2,7 @@
 
 What this lakehouse actually costs to run, argued from live Fabric telemetry (run durations)
 plus the known capacity SKU rather than guessed. The trial capacity is ephemeral (expires
-~2026-07-31), so this file is the durable record of evidence that disappears with it.
+~2026-08-05), so this file is the durable record of evidence that disappears with it.
 
 Cross-references: build journal in
 [`phases/track-a-progress.md`](phases/track-a-progress.md), the smoothing drills in
@@ -15,7 +15,7 @@ Cross-references: build journal in
 
 The project's workspaces run on a **Microsoft Fabric trial capacity**, which is **64 CU
 (FTL64)** — the F64 compute equivalent — for every Fabric trial by definition. Trial capacities
-are not billed and run a ~60-day window (this one expires ~2026-07-31). Region: West Europe
+are not billed and run a ~60-day window (this one expires ~2026-08-05). Region: West Europe
 (student tenant).
 
 ### Limitation — live per-item CU telemetry is unavailable on this tenant
@@ -68,6 +68,28 @@ almost no CU. **Duration ≠ cost.**
 The recurring workload is **one ~20-minute background run per day**, plus rare backfills. Light
 and bursty — the ideal shape for a small capacity with 24h smoothing.
 
+### Where the time goes — per-activity breakdown
+
+From the 18m09s manual prod run (`f6-daily-refresh-prod-chain.png`, activity-runs list):
+
+| Activity | Duration | Layer |
+|---|---:|---|
+| `inv_daily_ingest` | 7m42s | ingest (network-bound) |
+| `nb_silver_demanda` | 1m22s | silver |
+| `nb_silver_generacion` | 1m37s | silver |
+| `nb_silver_precios` | 1m22s | silver |
+| `nb_dq_gate_silver` | 2m09s | DQ gate |
+| `nb_gold_build` | 1m54s | gold |
+| `nb_gold_mlv` | 1m38s | gold (MLV refresh) |
+| **Sum of activities** | **17m44s** | (balance = orchestration overhead) |
+
+**Ingest is ~43 % of wall-clock but close to 0 % of CU** — it's HTTP waiting, not compute. The
+six Spark activities are ~57 % of the time and essentially *all* of the CU. This is a duration
+proxy, not a CU measurement (see the telemetry limitation above), but it's directionally
+sufficient: **the Spark layer is the cost driver, and the DQ gate + gold rebuild are the two
+biggest Spark consumers.** If this workload ever needed tuning for cost, `nb_dq_gate_silver`
+and `nb_gold_build` are where to look — not the ingest that dominates the clock.
+
 ### The schedule deployed itself
 
 The prod 08:00 run was **never configured by hand**. Fabric serializes a pipeline's schedule
@@ -80,7 +102,7 @@ evidence: it is only possible because prod was built from source control rather 
 together.
 
 ⚠️ **Operational consequence:** prod now consumes capacity every morning at 08:00 unattended,
-and will keep firing until the trial capacity expires (~2026-07-31), after which the runs fail
+and will keep firing until the trial capacity expires (~2026-08-05), after which the runs fail
 rather than stopping quietly. Disable the prod schedule if the noise matters before then.
 
 ### Why prod's ~20 min vs dev's few minutes
@@ -149,14 +171,14 @@ size tells you nothing about production sizing.
 
 ---
 
-## TODO — capture before the trial expires (~2026-07-31)
+## TODO — capture before the trial expires (~2026-08-05)
 
 - [x] Durations captured from the Monitor (backfill 3h09m; prod daily 18 min manual / 24 min
       scheduled) — 2026-07-24.
 - [ ] Screenshot the prod `pl_daily_refresh` green runs → `docs/evidence/phase-f/f6-daily-refresh-prod-green.png`.
       **Capture the scheduled 08:00 one with the `Run kind = Scheduled` column visible** — that
       is the self-operating-prod proof.
-- [ ] Decide whether to disable the prod 08:00 schedule before the trial lapses (~2026-07-31).
+- [ ] Decide whether to disable the prod 08:00 schedule before the trial lapses (~2026-08-05).
 - [ ] (Track B) With a self-administered capacity, connect the Metrics app and capture the
       itemized per-layer CU(s) — the breakdown this tenant can't provide.
 
