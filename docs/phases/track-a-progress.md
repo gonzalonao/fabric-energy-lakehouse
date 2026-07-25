@@ -303,7 +303,7 @@ Done criteria:
       `dim_technology` is the exact DISTINCT set, gate enforces non-null keys). `dim_indicator`
       intentionally **disconnected** — facts carry no indicator column. `dim_date` marked as
       date table on `[date]`)*
-- [x] E4 — DAX measures, sanity-checked *(**12 measures**: Total/Peak Demand,
+- [x] E4 — DAX measures, sanity-checked *(**11 measures**: Total/Peak Demand,
       Demand YoY % (R12), Total Demand (Complete Months), Data Through, Renewables Share %,
       Total Generation, Avg Price (€/MWh), Avg Price 30D, Min/Max Price. **Verified against
       the C7 SQL proof** — Renewables Share % for 2024-03 renders 65.7% at 1-decimal format =
@@ -383,7 +383,7 @@ Done criteria:
 - [x] Custom Direct Lake model (not default) *(`sm_energy`, Direct Lake on OneLake)*
 - [x] Report renders with no DirectQuery fallback *(E6 — no fallback path exists in this
       storage mode, so rendering proves it by construction)*
-- [x] TMDL measures in repo *(12 measures, plain readable DAX under
+- [x] TMDL measures in repo *(11 measures, plain readable DAX under
       `fabric/gold/sm_energy.SemanticModel/definition/tables/*.tmdl`)*
 
 ## Phase F — CI/CD · [guide](phase-f-cicd.md) · ✅
