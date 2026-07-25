@@ -462,16 +462,26 @@ what actually happens and correct whichever document is wrong.
       caught + fixed:** first run failed 4 notebooks on stray `__pycache__/*.pyc` — fabric-cicd
       publishes from the filesystem, so gitignored bytecode leaked in as definition parts.
       Hardened `deploy.py` with a pre-publish `__pycache__` clean; re-run published all 16
-      (guide Gotchas 2026-07-23). **Remaining for F6/F7:** run `pl_backfill_ree` in prod
-      (off-peak, ~4h) then a manual `pl_daily_refresh` — the prod data load)*
+      (guide Gotchas 2026-07-23). **Prod data load complete 2026-07-24:** `pl_backfill_ree`
+      green (**3h09m**, 2023-01 → 2026-07-23), then `pl_daily_refresh` green (**18 min** manual)
+      — the full medallion chain running end-to-end on prod data. Durations recorded in
+      [`capacity-notes.md`](../capacity-notes.md))*
 - [~] F7 — prod verified untouched-by-hand *(**item + binding verification passed 2026-07-23**:
       all 16 items in prod; `nb_gold_build` binds prod `lh_energy` (GUID-encoding worry
       **resolved** — `$items` yields the right form); `pl_ingest_ree` sink → prod lakehouse
       (auto-re-point confirmed). Expected asymmetry noted: dev's empty `bronze` workspace folder
       is absent in prod — Git doesn't track empty dirs and it holds no items, so it correctly
-      doesn't deploy; **not** to be hand-created (prod-never-hand-edited). **Remaining:** the
-      prod data proof — run `pl_backfill_ree` then `pl_daily_refresh` in prod (off-peak, ~4h),
-      open `rpt_energy` in prod rendering prod data)*
+      doesn't deploy; **not** to be hand-created (prod-never-hand-edited). **Data proof green
+      2026-07-24** (backfill 3h09m + daily refresh 18m, see F6). **Unpredicted finding — prod
+      deployed as a *self-operating* environment:** `pl_daily_refresh` fired **unattended at
+      08:00** the next morning (24 min, green) with no hand-configuration. Fabric serializes a
+      pipeline's schedule into Git as a `.schedules` file (B9, `f233aef`), so `fabric-cicd`
+      published the **active daily trigger** along with the item definition — deployment
+      reproduced the *operational behaviour*, not just the item graph. Strongest F7 evidence
+      yet, and only possible because prod was built from source control rather than clicked
+      together. ⚠️ Prod now consumes capacity daily until the trial lapses (~2026-07-31);
+      disable the schedule if the noise matters. **Remaining:** open `rpt_energy` in prod
+      rendering prod data)*
 - [ ] F8 — wrap-up + tag `v1.0.0` + 🎓 check
 
 Done criteria:

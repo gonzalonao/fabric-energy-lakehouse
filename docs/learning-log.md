@@ -386,6 +386,16 @@ Questions to run cold at Phase G / end of project. Grows one section per phase.
 7. The deploy failed 4 of 7 notebooks but published 3. What single fact explains *which* failed?
    (Only the 4 with a local `__pycache__` — see Q3. The 3 without one published fine; the split
    was diagnostic.)
+8. Nobody configured a schedule in `ws-energy-prod`, yet `pl_daily_refresh` ran by itself at
+   08:00 the morning after the deploy. How? And why is this *stronger* evidence for the CI/CD
+   claim than the manual run was? (Reach: Fabric serializes a pipeline's schedule into Git as a
+   dedicated `.schedules` file — own JSON schema, `localTimeZoneId` — so it is part of the item
+   definition and `fabric-cicd` publishes it like any other part. Prod inherited an **active
+   trigger** from `main`. It's stronger evidence because deployment reproduced the
+   *operational behaviour*, not just the item graph: prod is self-operating, which is only
+   possible when it's built from source control instead of clicked together. Corollary hazard:
+   a deployed schedule starts consuming capacity in prod immediately, whether or not you meant
+   it to.)
 
 ### Phase G — Capacity & cost (G3)
 

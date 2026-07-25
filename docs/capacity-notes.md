@@ -60,12 +60,38 @@ almost no CU. **Duration ≠ cost.**
 
 | Run | Trigger | Duration | Notes |
 |---|---|---|---|
-| `pl_backfill_ree` (prod) | manual, 2023-01 → 2026-07-23 | _TODO — read from `f6-backfill-prod-green.png`_ | one-off history load; 129 sequential chunks; wall-clock dominated by WAF-gated I/O (dev ran 3h53m49s) |
-| `pl_daily_refresh` (prod) | manual (first prod run) | _TODO — read at F6 Step 3_ | the **recurring steady-state** cost; incremental ingest + full gold rebuild |
-| `pl_daily_refresh` (dev, ref) | scheduled | ~3–5 min | dev daily runs (B8b: 3m42s / 5m16s) |
+| `pl_backfill_ree` (prod) | manual, 2023-01 → 2026-07-23 | **3h09m** | one-off history load; 129 sequential chunks; wall-clock dominated by WAF-gated I/O (dev ran 3h53m49s) |
+| `pl_daily_refresh` (prod) | manual, first prod run | **18 min** | full medallion chain: incremental ingest → 3× silver → DQ gate → full gold rebuild → MLV refresh |
+| `pl_daily_refresh` (prod) | **scheduled, 08:00** (unattended) | **24 min** | the **recurring steady-state** cost — see the scheduled-run finding below |
+| `pl_ingest_daily` (dev, ref) | scheduled | ~3–5 min | ingest leg only (B8b: 3m42s / 5m16s), not the full chain |
 
-The recurring workload is **one daily refresh of a few minutes**, plus rare backfills. Light and
-bursty — the ideal shape for a small capacity with 24h smoothing.
+The recurring workload is **one ~20-minute background run per day**, plus rare backfills. Light
+and bursty — the ideal shape for a small capacity with 24h smoothing.
+
+### The schedule deployed itself
+
+The prod 08:00 run was **never configured by hand**. Fabric serializes a pipeline's schedule
+into Git as a dedicated `.schedules` file (B9, commit `f233aef` — its own JSON schema, carrying
+`localTimeZoneId: Romance Standard Time`), so `fabric-cicd` published it as part of the item
+definition and **prod inherited an active daily trigger from `main`**. Prod is therefore not
+merely a deployed copy but a **self-operating environment** — deployment reproduced the
+*operational* behaviour, not just the item graph. This is the strongest single piece of F7
+evidence: it is only possible because prod was built from source control rather than clicked
+together.
+
+⚠️ **Operational consequence:** prod now consumes capacity every morning at 08:00 unattended,
+and will keep firing until the trial capacity expires (~2026-07-31), after which the runs fail
+rather than stopping quietly. Disable the prod schedule if the noise matters before then.
+
+### Why prod's ~20 min vs dev's few minutes
+
+Not a regression, and not a prod-vs-dev difference in efficiency. The dev reference figure is
+`pl_ingest_daily` — the **ingest leg alone**. Prod's number is the **full master chain**, whose
+dominant costs are a cold Spark session start against the custom `env_energy` environment
+(custom-library startup is minutes, paid once per run) and the **full atomic gold rebuild**
+over all three years of history (decisions D10 — gold is rebuilt from scratch each run, not
+merged). Both are by design; the 18→24 min spread between two runs of the same pipeline is
+normal Spark session-acquisition variance.
 
 ---
 
@@ -83,12 +109,29 @@ SKU *ratios* are constant — West Europe runs modestly higher):
 | **F4** | 4 | ~$526/mo always-on | ~$311/mo |
 | **F64** | 64 | ~$8,410/mo always-on | ~$4,982/mo |
 
-**Assessment:** this lakehouse runs comfortably on the **cheapest SKU, F2 (2 CU)**. A daily
-refresh of a few minutes is a small fraction of an F2's daily CU-second budget, and PAYG F2 can
-be **paused** between the daily window — a workload that runs minutes per day doesn't need a
-capacity live 24/7. Honest production recommendation: **F2 pay-as-you-go with a pause schedule**,
-stepping up only if interactive report concurrency or heavier transforms are added. The
-F64-equivalent trial is ~32× larger than needed.
+**Assessment: this lakehouse runs comfortably on the cheapest SKU, F2 (2 CU).** Sizing argument
+from the measured 24-minute daily run:
+
+- Fabric bills Spark at **1 CU = 2 Spark vCores**. A small default pool allocating ~8 vCores
+  ⇒ ~4 CU while active.
+- 4 CU × 1,440 s (24 min) ≈ **5,800 CU-seconds per day**.
+- An **F2** provides 2 CU × 86,400 s = **172,800 CU-seconds/day**.
+- The daily refresh therefore consumes roughly **3–4 % of an F2's daily budget** — and 24-hour
+  background smoothing spreads even that across the day, so the burst never approaches the
+  ceiling.
+
+*(vCore allocation is an assumption — the exact figure needs the per-item CU breakdown this
+tenant can't provide. Even at 4× the estimate the conclusion holds.)*
+
+Honest production recommendation: **F2 pay-as-you-go**, optionally paused outside the daily
+window. One nuance if pausing: accumulated smoothed background charges are billed as a lump at
+pause time, so pausing shifts *when* you pay rather than avoiding the CU-seconds already
+consumed — the saving comes from not renting idle capacity, which for a minutes-per-day workload
+is still most of the bill. Step up to F4+ only if interactive report concurrency or heavier
+transforms are added.
+
+The F64-equivalent trial is ~32× larger than this workload needs — a useful reminder that trial
+size tells you nothing about production sizing.
 
 ---
 
@@ -108,9 +151,12 @@ F64-equivalent trial is ~32× larger than needed.
 
 ## TODO — capture before the trial expires (~2026-07-31)
 
-- [ ] Fill the two duration cells above from the Monitor: `pl_backfill_ree` (from
-      `f6-backfill-prod-green.png`) and the first prod `pl_daily_refresh` (F6 Step 3).
-- [ ] Screenshot the prod `pl_daily_refresh` green run → `docs/evidence/phase-f/f6-daily-refresh-prod-green.png`.
+- [x] Durations captured from the Monitor (backfill 3h09m; prod daily 18 min manual / 24 min
+      scheduled) — 2026-07-24.
+- [ ] Screenshot the prod `pl_daily_refresh` green runs → `docs/evidence/phase-f/f6-daily-refresh-prod-green.png`.
+      **Capture the scheduled 08:00 one with the `Run kind = Scheduled` column visible** — that
+      is the self-operating-prod proof.
+- [ ] Decide whether to disable the prod 08:00 schedule before the trial lapses (~2026-07-31).
 - [ ] (Track B) With a self-administered capacity, connect the Metrics app and capture the
       itemized per-layer CU(s) — the breakdown this tenant can't provide.
 
