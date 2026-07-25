@@ -413,6 +413,17 @@ Questions to run cold at Phase G / end of project. Grows one section per phase.
     says nothing about **which lakehouse** was read. A correctness check that can only fail
     loudly cannot detect a wrong-but-valid target; the only test that catches this is reading
     the binding itself.)
+11. The first `develop` → `main` promotion was squash-merged; the content was identical either
+    way, so it was called cosmetic. Three days later the *next* promotion opened with six
+    conflicts in files nobody had touched on `main`. Explain the mechanism. (Reach: a squash
+    creates a **new commit with no ancestry** to the branch it came from. `main`'s only common
+    ancestor with `develop` became the original scaffold commit, so Git 3-way-merged every file
+    against a pre-project version and reported **add/add** conflicts — both sides look like
+    they're adding the file for the first time. Nothing had actually diverged: `main`'s tree was
+    byte-identical to `develop`'s at the squashed commit. Fix: merge `main` *into* `develop`
+    first, resolve wholesale in `develop`'s favour, verify the tree is unchanged — a merge that
+    changes no content but restores the merge base. **The general point: a squash's cost is not
+    paid at merge time, it's deferred to the next merge.**)
 
 ### Phase G — Capacity & cost (G3)
 

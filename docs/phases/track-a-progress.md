@@ -498,13 +498,39 @@ what actually happens and correct whichever document is wrong.
       parameterizing" was half-right — the real rule is *auto-re-point covers structured
       item references, not GUIDs embedded in free-text payloads*. **Remaining:** redeploy,
       re-verify the binding shows prod, then open `rpt_energy` in prod)*
-- [ ] F8 — wrap-up + tag `v1.0.0` + 🎓 check
+- [~] F8 — wrap-up + tag `v1.0.0` + 🎓 check *(**promotion + tag done 2026-07-25.**
+      [PR #9](https://github.com/gonzalonao/fabric-energy-lakehouse/pull/9) merged **with a
+      merge commit** (`048772b`, parents `3226dd2` + `01da35d`) — `main` now carries the full
+      phase history, and `v1.0.0` is an annotated tag on it, pushed to both remotes.
+      **The squash from F5 presented its bill here.** PR #9 opened with **six add/add
+      conflicts** — `deploy.py`, `parameter.yml`, and four docs — none of them real divergence:
+      because #8 was squashed, `main`'s only common ancestor with `develop` was the original
+      scaffold commit, so Git 3-way-merged every file against a pre-project version and saw both
+      sides as *adding* it. Proof that nothing was actually divergent: `main`'s tree was
+      **byte-identical** to `develop`'s at `4c2cfe2`, the commit #8 squashed. Resolved by merging
+      `main` **into** `develop` first (`01da35d`), taking `develop`'s tree wholesale and
+      verifying `git diff HEAD^1 HEAD` was empty — a merge that changed nothing but restored the
+      ancestry. PR #9 then went `MERGEABLE / CLEAN`. **Lesson, now paid rather than theorised:**
+      a squash promotion isn't cosmetic — it severs ancestry, and the cost lands on the *next*
+      release as phantom conflicts. Permanently fixed: `main` is a true ancestor of `develop`
+      again. *(Also worth recording: an attempted pre-flight check with the deprecated
+      three-argument `git merge-tree` reported zero conflicts. That form performs a trivial
+      merge, not a real one — use `git merge-tree --write-tree A B`, or a throwaway branch.)*
+      **Remaining:** post-build 🎓 check)*
 
 Done criteria:
-- [ ] `develop` → `main` PR-gated
-- [ ] Merge (or documented fallback) reproduces prod
-- [ ] Dev/prod values via parameterization
-- [ ] SPN pattern documented regardless of outcome
+- [x] `develop` → `main` PR-gated *(ruleset `protect-main`: required PR + block force pushes;
+      both promotions went through PRs #8 and #9 — `main` has never taken a direct push)*
+- [x] Merge (or documented fallback) reproduces prod *(documented fallback — SPN blocked at F1,
+      so `deploy.py` runs locally with interactive auth against the merged commit. Reproduction
+      proven end-to-end: 16/16 items published, full history backfilled, the medallion chain
+      green, and the deployed schedule firing unattended)*
+- [x] Dev/prod values via parameterization *(`parameter.yml` rewrites notebook **and** semantic
+      model lakehouse/workspace bindings; pipelines auto-re-point; `vl_energy`'s `prod` value set
+      selected by environment name. The semantic-model gap was found in prod and closed — F7)*
+- [x] SPN pattern documented regardless of outcome *(F1: blocked at directory policy, recorded
+      with the exact failure mode; `deploy-prod.yml` ships gated on `vars.SPN_ENABLED` so the
+      enterprise path is in the repo ready for Track B)*
 
 ## Phase G — Evidence & docs · [guide](phase-g-evidence-docs.md) · ⬜
 
