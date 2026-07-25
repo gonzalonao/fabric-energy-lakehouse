@@ -35,7 +35,7 @@
 
 find_replace:
   # ---------------------------------------------------------------------------------
-  # 1. Notebook -> lakehouse binding.
+  # 1. Notebook + semantic model -> lakehouse binding.
   #
   # Every notebook's `# META` header pins `default_lakehouse` and `known_lakehouses[].id`.
   # Unlike pipelines, notebooks are NOT auto-re-pointed, so without this entry all seven
@@ -51,19 +51,32 @@ find_replace:
   # dev's notebooks carry `6cabfc1b-836e-43ad-9379-94fa8bdb6c16` while dev's pipelines carry
   # `8bdb6c16-94fa-9379-43ad-836e6cabfc1b` for the SAME lakehouse — the same 16 bytes in a
   # different order — so a naive substitution could have written the wrong form. It didn't.)
+  # ⚠️ EXTENDED TO SemanticModel at F7 (2026-07-24) — a real defect caught in prod.
+  # `sm_energy` is Direct Lake **on OneLake**, so its source is a Power Query expression in
+  # `definition/expressions.tmdl`:
+  #     AzureStorage.DataLake("https://onelake.dfs.fabric.microsoft.com/<workspace>/<lakehouse>")
+  # Both GUIDs are baked in as a literal URL, and fabric-cicd's same-workspace auto-re-point
+  # does NOT reach inside it — an M expression is an opaque string to the re-pointer, exactly
+  # like a notebook's `default_lakehouse`. Deployed unparameterized, prod's semantic model read
+  # **dev's** lakehouse and the prod report rendered dev's data while looking entirely healthy.
+  # The silent-wrong-target failure mode, in the one item type where nothing would ever throw.
+  # Note the lakehouse GUID here uses the *notebook* encoding (`6cabfc1b-…`), not the pipeline
+  # one — so the same replacement value is correct for both item types.
   - find_value: "6cabfc1b-836e-43ad-9379-94fa8bdb6c16"
     replace_value:
       prod: "$items.Lakehouse.lh_energy.$id"
-    item_type: "Notebook"
+    item_type: ["Notebook", "SemanticModel"]
 
   # ---------------------------------------------------------------------------------
-  # 2. Notebook -> workspace binding.
+  # 2. Notebook + semantic model -> workspace binding.
   #
   # Notebooks hardcode `default_lakehouse_workspace_id` as a literal dev GUID. Pipelines
   # use `00000000-0000-0000-0000-000000000000` ("current workspace") and need nothing —
   # which is exactly why "workspace IDs never need substitution" is a half-truth worth
   # unlearning: it holds for pipelines and fails for notebooks.
+  # Also extended to SemanticModel (see the F7 note above) — the OneLake URL's *first* path
+  # segment is the workspace GUID, so both halves of that URL need substituting.
   - find_value: "476b58fd-19e3-4c0d-bde7-c3f16d2a6fcf"
     replace_value:
       prod: "$workspace.$id"
-    item_type: "Notebook"
+    item_type: ["Notebook", "SemanticModel"]

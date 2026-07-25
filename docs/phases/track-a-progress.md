@@ -480,8 +480,24 @@ what actually happens and correct whichever document is wrong.
       reproduced the *operational behaviour*, not just the item graph. Strongest F7 evidence
       yet, and only possible because prod was built from source control rather than clicked
       together. ⚠️ Prod now consumes capacity daily until the trial lapses (~2026-07-31);
-      disable the schedule if the noise matters. **Remaining:** open `rpt_energy` in prod
-      rendering prod data)*
+      disable the schedule if the noise matters. **🔴 DEFECT CAUGHT 2026-07-24 — the semantic
+      model was never re-pointed.** `sm_energy`'s prod *Cloud connections* pane showed
+      `onelake.dfs.fabric.microsoft.com/476b58fd-…/6cabfc1b-…` — **dev's workspace + dev's
+      lakehouse**. Root cause: Direct Lake **on OneLake** stores its source as a Power Query
+      expression in `definition/expressions.tmdl` (`AzureStorage.DataLake("https://…/<ws>/<lh>")`),
+      and fabric-cicd's same-workspace auto-re-point **does not reach inside an M expression** —
+      it's an opaque string, exactly like a notebook's `default_lakehouse`. `parameter.yml`
+      scoped both GUID substitutions to `item_type: "Notebook"`, so the model shipped with dev's
+      URL verbatim and **prod's report rendered dev's data while looking completely healthy**.
+      The silent-wrong-target failure (M3's whole moral) landing in the one item type where
+      nothing throws. **Fix:** both entries broadened to
+      `item_type: ["Notebook", "SemanticModel"]` — the find_values were already correct (the
+      model uses the *notebook* GUID encoding), only the scope was too narrow. `rpt_energy` is
+      unaffected: it binds `byPath: ../sm_energy.SemanticModel`, relative and portable.
+      **Correction to F3's finding:** "pipelines auto-re-point so only notebooks need
+      parameterizing" was half-right — the real rule is *auto-re-point covers structured
+      item references, not GUIDs embedded in free-text payloads*. **Remaining:** redeploy,
+      re-verify the binding shows prod, then open `rpt_energy` in prod)*
 - [ ] F8 — wrap-up + tag `v1.0.0` + 🎓 check
 
 Done criteria:

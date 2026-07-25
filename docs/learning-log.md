@@ -396,6 +396,23 @@ Questions to run cold at Phase G / end of project. Grows one section per phase.
    possible when it's built from source control instead of clicked together. Corollary hazard:
    a deployed schedule starts consuming capacity in prod immediately, whether or not you meant
    it to.)
+9. Pipelines re-point to prod's lakehouse automatically; notebooks need a `parameter.yml` entry.
+   State the rule that predicts which of the two a **semantic model** behaves like — then say
+   what actually happened. (Reach: the rule is *not* "pipelines vs everything else". Auto-re-point
+   resolves **structured item references** — a pipeline activity's `artifactId` field is a typed
+   pointer fabric-cicd understands. It cannot touch a GUID embedded in a **free-text payload**:
+   a notebook's `# META` header, or — the case that bit us — a Direct Lake **on OneLake** model,
+   whose source is a Power Query M expression holding a literal URL
+   `https://onelake.dfs.fabric.microsoft.com/<workspace>/<lakehouse>`. So the model behaves like
+   a notebook. Deployed unparameterized, prod's `sm_energy` pointed at **dev's** lakehouse and
+   the prod report rendered **dev's data, with no error at all** — M3's silent-wrong-target
+   moral, in the one item type where nothing ever throws to warn you.)
+10. Why was that defect invisible to every check that had already passed at F7? (Reach: the item
+    inventory was complete (16/16), the notebook bindings were right, the pipeline sink was
+    right, and the *report rendered perfectly*. Rendering proves there's no fallback path — it
+    says nothing about **which lakehouse** was read. A correctness check that can only fail
+    loudly cannot detect a wrong-but-valid target; the only test that catches this is reading
+    the binding itself.)
 
 ### Phase G — Capacity & cost (G3)
 
