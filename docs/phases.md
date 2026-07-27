@@ -16,7 +16,7 @@ demonstrates, so a reader can check a claim without having to interpret a raw im
 | [A](#phase-a--platform--source-control) | Platform & source control | ✅ | [6 screenshots](evidence/phase-a/) |
 | [B](#phase-b--batch-ingestion) | Batch ingestion | ✅ | [19 screenshots](evidence/phase-b/) |
 | [C](#phase-c--transform--data-quality) | Transform & data quality | ✅ | [11 screenshots](evidence/phase-c/) |
-| [D](#phase-d--orchestration) | Orchestration | ✅ | [6 screenshots](evidence/phase-d/) |
+| [D](#phase-d--orchestration) | Orchestration | ✅ | [7 screenshots](evidence/phase-d/) |
 | [E](#phase-e--serving) | Serving | 🚧 | [2 screenshots](evidence/phase-e/) |
 | [F](#phase-f--cicd) | CI/CD & release | ✅ | [5 screenshots](evidence/phase-f/) |
 | [G](#phase-g--evidence--documentation) | Evidence & documentation | 🚧 | *(this page and its siblings)* |
@@ -125,7 +125,9 @@ One trigger, the whole medallion, and an alert that actually fires.
 - Three consecutive **unattended scheduled runs** green, with `Run kind = Scheduled` — the
   column that distinguishes a real trigger from a manual start.
 - A controlled break produced exactly one alert email, gold correctly skipped, and an honest
-  red status.
+  red status — and the email is evidenced **in the recipient's inbox**, not just as a succeeded
+  activity in Monitor. A succeeded send activity proves the call was made, not that mail
+  arrived.
 
 📁 [`evidence/phase-d/`](evidence/phase-d/)
 
