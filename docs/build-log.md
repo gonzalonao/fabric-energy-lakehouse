@@ -3,7 +3,8 @@
 How this lakehouse was built, in the order it happened — and, more usefully, what went wrong
 along the way and what each failure forced. The architecture is described in the
 [README](../README.md); the reasoning behind each choice is in
-[`decisions.md`](decisions.md). This file is the narrative that connects them.
+[`decisions.md`](decisions.md); the inventory of what exists after each phase, with links to
+the evidence, is in [`phases.md`](phases.md). This file is the narrative that connects them.
 
 Every incident below is real and most produced a design change. They are recorded because a
 platform that never surprised anyone during construction is usually one that hasn't been

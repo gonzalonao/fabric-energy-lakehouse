@@ -240,7 +240,8 @@ is a tenant policy, not an architectural one, and it is documented rather than p
 | [`docs/decisions.md`](docs/decisions.md) | 19 architectural decisions, each with its rejected alternative |
 | [`docs/capacity-notes.md`](docs/capacity-notes.md) | CU smoothing, measured run costs, and an honest SKU-sizing argument |
 | [`docs/data-dictionary.md`](docs/data-dictionary.md) | Column-level contracts for every silver and gold table |
-| [`docs/build-log.md`](docs/build-log.md) | How it was built, phase by phase — the incidents and what each one forced |
+| [`docs/phases.md`](docs/phases.md) | What was built in each phase, and links to the evidence for it |
+| [`docs/build-log.md`](docs/build-log.md) | How it was built — the incidents along the way and what each one forced |
 | [`docs/evidence/`](docs/evidence/) | Screenshots proving each phase, catalogued per phase |
 
 ## Roadmap
