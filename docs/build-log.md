@@ -131,7 +131,10 @@ of which reproduces a monthly renewables share three separate ways.
 ## Orchestration
 
 One master pipeline chains the whole medallion from a single daily trigger: ingest → three
-silver notebooks → DQ gate → gold rebuild → MLV refresh.
+silver notebooks → DQ gate → gold rebuild → MLV declaration. That last step *declares* the
+materialized lake views rather than refreshing them — `CREATE … IF NOT EXISTS` makes it an
+idempotent no-op once they exist, and the engine owns their refresh. The corollary is that
+editing an MLV's SQL alone changes nothing; a definition change needs an explicit drop first.
 
 **The first failure-alert design could never have fired.** It wired seven `On fail` arrows
 from seven activities into a single email activity. In Data Factory, dependencies from

@@ -21,6 +21,15 @@ table dim_technology
 
 		annotation SummarizationSetBy = Automatic
 
+	column renewable_label
+		dataType: string
+		lineageTag: 4d642363-cc5d-48a5-8af6-76b6e8d529ab
+		sourceLineageTag: renewable_label
+		summarizeBy: none
+		sourceColumn: renewable_label
+
+		annotation SummarizationSetBy = Automatic
+
 	partition dim_technology = entity
 		mode: directLake
 		source
