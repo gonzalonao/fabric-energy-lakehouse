@@ -16,8 +16,6 @@ Direct Lake semantic model.
 
 **Status: `v1.0.0` — deployed to a production workspace and verified end to end.**
 
-![The report rendering production data](docs/evidence/phase-f/f7-report-prod-rendered.png)
-
 ---
 
 ## What this demonstrates
