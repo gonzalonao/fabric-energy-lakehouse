@@ -16,6 +16,10 @@ Direct Lake semantic model.
 
 **Status: `v1.0.0` — deployed to a production workspace and verified end to end.**
 
+🎬 **[Watch the 90-second demo](https://github.com/gonzalonao/fabric-energy-lakehouse/releases/download/v1.0.0/fabric-energy-lakehouse-demo.mp4)** — source-controlled item
+definitions, the medallion chain running green, the DQ results table, a real failure alert,
+the deployed production workspace, and a scheduled run nobody triggered.
+
 ---
 
 ## What this demonstrates
