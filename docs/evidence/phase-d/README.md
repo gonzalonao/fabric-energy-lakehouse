@@ -7,8 +7,18 @@ Screenshots proving the orchestration layer (`pl_daily_refresh`). Catalogued as 
 | File | What it proves |
 |---|---|
 | `d1-alert-failure-proof.png` | **The failure path works end to end.** A controlled break (`nb_dq_gate_silver` run with `p_stage=silverX`, invalid → the gate raises before touching data) makes the run fail mid-chain. The Monitor run detail shows: ingest + all three silver notebooks **Succeeded**; `nb_dq_gate_silver` **Failed**; `nb_gold_build` and `nb_gold_mlv` **Skipped** (Gold never rebuilt from an ungated run); `alert_on_fail` **Succeeded** (exactly one email, sent to the `vl_energy` library variable address); `fail_run` **Failed**; and the pipeline overall reports **Failed**. This single run demonstrates all three guarantees — one alert on any failure, Gold protected by the gate, and an honest red status despite the alert succeeding (see the terminal-skip-funnel + Fail-activity design in [`docs/decisions.md`](../../decisions.md) D17). |
+| `d1-alert-email-received.png` | **The alert didn't just run — it arrived.** The email in the recipient's inbox: subject `pl_daily_refresh FAILED — 241a3c4b-8f43-493e-a4c3-eab358e86639`, body `A stage of the daily refresh failed. Open the run: 241a3c4b-…`, received **20 Jul 2026, 18:29**. That RunId is the exact `Pipeline run ID` shown in `d1-alert-failure-proof.png`, and the timing chains to the minute — `alert_on_fail` succeeded at **6:29:15 PM** with a 2 s duration. The two shots are therefore provably the *same run*, not two adjacent claims. **Why this file exists at all:** the Monitor row above shows `alert_on_fail` **Succeeded**, which proves only that Fabric *invoked* the Office 365 Outlook action without erroring — it says nothing about whether mail reached a mailbox. Delivery to an **external provider** (a Gmail address, from the tenant's Outlook connection) is the part Monitor structurally cannot show. *(Recipient address redacted; the tenant appends a long mandatory privacy footer to outbound mail, cropped here — see the note below.)* |
 | `d1-master-run-green.png` | **The clean end-to-end run.** Pipeline status **Succeeded**; the Output list shows all seven executed activities Succeeded — `inv_daily_ingest` (9m32s) → `nb_silver_demanda` → `nb_silver_generacion` → `nb_silver_precios` → `nb_dq_gate_silver` → `nb_gold_build` → `nb_gold_mlv` (~1m20s–1m52s each). `alert_on_fail` and `fail_run` are **absent from the list** — i.e. skipped — which is the success-path counterpart to the failure proof: the alert funnel stays silent when nothing breaks. |
 | `d1-master-run-green-gantt.png` | **The chain really is sequential, not parallel.** Same green run in Monitor's **Gantt** view: each activity's bar starts only after the previous one ends (02:25 → 02:43). This is the visual proof of the D1 design decision — the three silver notebooks are chained one-after-another to avoid Spark session contention on the trial capacity, *not* because they'd collide in Delta (they write three different tables, so no `ConcurrentAppendException` is possible). |
+
+### A note the delivered email exposed
+
+The sending tenant appends a ~300-word mandatory privacy footer to every outbound message, and
+it is long enough that the mail client **clips the message** — the actionable content is pushed
+behind a *"View entire message"* link. The alert survives that intact only because the failing
+pipeline's RunId is in the **subject line**, not just the body. Worth keeping as a general rule
+for alerting: an alert's payload has to survive whatever a mail gateway staples to it, so the
+identifying detail belongs in the subject.
 
 ## D2 — schedule moved to the master
 
