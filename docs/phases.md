@@ -18,7 +18,7 @@ demonstrates, so a reader can check a claim without having to interpret a raw im
 | [C](#phase-c--transform--data-quality) | Transform & data quality | ✅ | [11 screenshots](evidence/phase-c/) |
 | [D](#phase-d--orchestration) | Orchestration | ✅ | [7 screenshots](evidence/phase-d/) |
 | [E](#phase-e--serving) | Serving | 🚧 | [2 screenshots](evidence/phase-e/) |
-| [F](#phase-f--cicd) | CI/CD & release | ✅ | [5 screenshots](evidence/phase-f/) |
+| [F](#phase-f--cicd) | CI/CD & release | ✅ | [6 screenshots](evidence/phase-f/) |
 | [G](#phase-g--evidence--documentation) | Evidence & documentation | 🚧 | *(this page and its siblings)* |
 
 ---
