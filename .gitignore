@@ -35,3 +35,12 @@ models/
 Thumbs.db
 .idea/
 .vscode/
+
+# Private build journal — its own repo (fabric-energy-lakehouse-journal).
+# Step-by-step phase guides, learning log, plans and agent instructions: they
+# document how this was built, not what it is. Public equivalent: docs/build-log.md.
+docs/private/
+
+# Agent instructions. Must stay at the repo root to be loaded, so it is ignored
+# rather than moved; the version-controlled copy lives in docs/private/CLAUDE.md.
+/CLAUDE.md

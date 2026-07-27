@@ -5,8 +5,7 @@ alternative that was rejected. Ordered by the layer they touch, not chronologica
 decision was later corrected by evidence, that is recorded rather than quietly overwritten —
 the correction is part of the reasoning.
 
-Cross-references: build journal in [`phases/track-a-progress.md`](phases/track-a-progress.md),
-concept record in [`learning-log.md`](learning-log.md), data contracts in
+Cross-references: the build narrative in [`build-log.md`](build-log.md), data contracts in
 [`data-dictionary.md`](data-dictionary.md).
 
 ---
@@ -20,9 +19,10 @@ DevOps as Fabric's Git provider, **Track B** on an own tenant using native GitHu
 portfolio-valuable in its own right — the divergence points (SPN CI/CD, provider setup) are
 exactly what an employer asks about. Running it twice turns a tenant limitation into a
 comparison.
-**Consequence.** Every phase guide carries `[Track A]`/`[Track B]` variant blocks that must
-stay in sync. A negative result on one track (e.g. Track A's blocked SPN) *strengthens* the
-comparison rather than being a gap.
+**Consequence.** The two tracks must describe the same phases and the same end product, so
+every provider-specific step is documented as a paired variant rather than a fork. A negative
+result on one track (e.g. Track A's blocked SPN) *strengthens* the comparison rather than
+being a gap.
 
 ### D2 — GitHub is canonical; Fabric syncs Azure DevOps (Track A)
 **Decision.** Fabric ⇄ Azure DevOps for Git integration, but this GitHub repo is the durable
@@ -39,8 +39,8 @@ land on `devops` → fetch → fast-forward → mirror to `origin`.
 and is a **prerequisite for materialized lake views** (Phase C). It can only be set at
 creation, so the cost of skipping it is a full rebuild.
 **Rejected.** A flat non-schema lakehouse — simpler, but it forecloses MLVs and muddies the
-medallion layering. (Note: schemas are *unrelated* to Direct Lake, a common conflation — see
-learning-log M2.)
+medallion layering. (Note: schemas are *unrelated* to Direct Lake — a common conflation of a storage-layout
+choice with a query-mode one.)
 
 ### D4 — develop-flow branching; `main` is the release gate
 **Decision.** `feature/*` → `develop` (auto-mergeable); `develop` → `main` by PR only. Fabric's
@@ -65,7 +65,7 @@ state, size-limited and never persisted — Bronze must land a file).
 **Decision.** Treat "what to fetch" and "what happens if you fetch it twice" as separate
 problems: a watermark (`bronze.ctl_watermark`) decides the window; a deterministic path +
 Copy **overwrite** makes a re-run safe.
-**Why.** Conflating them is a trap (learning-log M4). Idempotency that actually rests on the
+**Why.** Conflating them is a trap. Idempotency that actually rests on the
 watermark evaporates on the failed run — where the watermark never moved. The kill-test (B8c)
 proved it: a cancelled backfill re-ran to an identical file set with the watermark untouched.
 **Consequence.** The watermark is written **only after a successful copy**, so a failure yields
@@ -75,7 +75,7 @@ re-fetch pressure, never a silent gap.
 **Decision.** Chain the three per-indicator watermark MERGEs sequentially
 (`nb_wm_demanda → generacion → precios`) rather than running them in parallel off the ForEach.
 **Why.** Three parallel MERGEs into one unpartitioned Delta table race to commit the next
-version; one wins, the rest throw `ConcurrentAppendException` (learning-log M6). This actually
+version; one wins, the rest throw `ConcurrentAppendException`. This actually
 failed in B7. A conflict needs *the same table AND a writer that also read it* — serializing
 removes the race.
 **Rejected.** Partition-per-indicator (over-engineering three tiny rows); blind retry (a
@@ -101,7 +101,7 @@ is required, a missing key) → **quarantine**, run continues. **Semantic** prob
 that parses fine but violates policy, e.g. negative demand) → **DQ gate**, run **fails**. The
 gate writes every result to `ops.dq_results` *before* it raises.
 **Why.** A row that can't become a typed row without guessing can't be judged semantically yet
-(learning-log M7) — different jurisdictions. Writing all results before raising means every
+— different jurisdictions. Writing all results before raising means every
 failure is diagnosable from the table, not just the first in stderr.
 **Evidence.** The gate caught 8 real negative-generation rows (all `Carbón`, legitimate thermal
 self-consumption) and a corrupted-file test drove the full fail→clean→green arc.
@@ -121,8 +121,8 @@ column).
 **Why.** UTC is the unique row identity across DST (a local timestamp alone is not unique twice
 a year); the civil date is what a daily join *means*. `to_date(utc)` would misdate the first
 1–2 h of every Madrid day onto the previous day. Neither column can replace the other — and
-this is a **domain** decision, nothing to do with Direct Lake (a wrong-mechanism trap,
-learning-log M7 note).
+this is a **domain** decision, nothing to do with Direct Lake — crediting the platform for a
+domain requirement is a trap worth naming.
 
 ### D12 — Materialized lake views where declarative wins
 **Decision.** Two engine-refreshed MLVs for stable relational aggregates; notebook aggregates
@@ -192,7 +192,7 @@ interactive browser otherwise.
 (`main` → prod). Prod is **never** Git-bound — by design, not limitation (on Track A dev and
 prod share the tenant, so integration is available and deliberately refused): binding it would
 copy dev's GUIDs verbatim, skip the gate, make prod hand-editable, and deploy as the wrong
-identity (learning-log M3). The SPN path is blocked on the student tenant (Entra admin centre
+identity. The SPN path is blocked on the student tenant (Entra admin centre
 401), so prod deploys by running the same script locally with interactive auth — same code,
 same commit, different identity and trigger. The workflow ships anyway, gated off.
 
