@@ -4,9 +4,7 @@ What this lakehouse actually costs to run, argued from live Fabric telemetry (ru
 plus the known capacity SKU rather than guessed. The trial capacity is ephemeral (expires
 ~2026-08-05), so this file is the durable record of evidence that disappears with it.
 
-Cross-references: build journal in
-[`phases/track-a-progress.md`](phases/track-a-progress.md), the smoothing drills in
-[`learning-log.md`](learning-log.md) (Phase G — Capacity & cost), decisions in
+Cross-references: the build narrative in [`build-log.md`](build-log.md), decisions in
 [`decisions.md`](decisions.md).
 
 ---

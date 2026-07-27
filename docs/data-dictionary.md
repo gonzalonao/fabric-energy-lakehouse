@@ -71,6 +71,7 @@ keys throughout — facts join dims on `date` / `technology` / `indicator` direc
 |---|---|---|
 | `technology` | string | Key. 16 distinct non-composite series across 2023–2026 (a single month shows fewer; verified no duplicate names, so fact joins cannot fan out) |
 | `is_renewable` | boolean | Carried from Silver = the API's own classification |
+| `renewable_label` | string | `Renewable` / `Non-renewable` — the display form of `is_renewable`, for report legends and slicers where a raw boolean renders as "True"/"False". Derived in `nb_gold_build`, not in DAX, because Direct Lake supports no calculated columns |
 
 ### `gold.dim_indicator` — one row per ingested series (3 rows)
 | Column | Type | Notes |

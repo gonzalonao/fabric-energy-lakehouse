@@ -2,7 +2,7 @@
 
 Screenshots proving the Platform & Git milestone (Track A — Azure DevOps as the Fabric
 Git provider, with **GitHub kept canonical** via mirroring — see
-[tracks.md](../../phases/tracks.md)).
+the build log).
 
 | File | What it proves |
 |---|---|

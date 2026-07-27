@@ -97,9 +97,16 @@ overwrite("gold.dim_date", dim_date)
 
 # dim_technology — distinct technologies with the API's own renewable classification
 # (carried through Silver from the payload, never inferred from names).
+# renewable_label is the display form of is_renewable: a boolean legend reads "True"/
+# "False", which is meaningless to a report consumer. Derived here rather than in DAX
+# because Direct Lake supports no calculated columns.
 dim_technology = spark.sql(
     """
-    SELECT DISTINCT technology, is_renewable
+    SELECT DISTINCT
+        technology,
+        is_renewable,
+        CASE WHEN is_renewable THEN 'Renewable' ELSE 'Non-renewable' END
+            AS renewable_label
     FROM silver.generation_daily
     """
 )

@@ -27,7 +27,8 @@ Screenshots proving the Batch ingestion milestone (Track A). Phase A's evidence:
 
 - `b2-pending-commit.png` is the shot that was missed at A7 (the pending state had already
   been committed by the time we looked). It is the visual counterpart to Phase A's
-  `a2-folders-lakehouse.png`, which shows the *Synced* state — together they show both
+  [`a2-folders-lakehouse.png`](../phase-a/a2-folders-lakehouse.png), which shows the *Synced*
+  state — together they show both
   sides of the manual-sync boundary.
 - `b3-run1-*` and `b3-run2-*` are a **pair** and only mean anything read together: the point
   is that the file **count** didn't change while the **timestamp** did.
