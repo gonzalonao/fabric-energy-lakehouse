@@ -43,11 +43,6 @@ logger = logging.getLogger("nb_gold_build")
 
 GOLD_SCHEMA = "gold"
 
-# dim_date span: backfill start through past the trial window, so the dimension never
-# needs touching during this project's lifetime.
-DATE_START = "2023-01-01"
-DATE_END = "2027-12-31"
-
 # Units confirmed by C4 profiling (docs/data-dictionary.md). The wheel's Indicator.unit
 # is still None in 0.2.0 — a metadata-only bump isn't worth an env re-publish cycle;
 # fold into the next batched wheel release.
@@ -76,7 +71,47 @@ def overwrite(table, df):
 
 spark.sql(f"CREATE SCHEMA IF NOT EXISTS {GOLD_SCHEMA}")
 
-# dim_date — generated, not derived: complete calendar regardless of data gaps.
+# dim_date bounds come from the loaded data, not from a hardcoded window. The calendar
+# itself is still *generated* — every day between the bounds exists regardless of gaps in
+# the facts — but a fixed end date (previously 2027-12-31) leaked empty future years into
+# every consumer: an unselectable 2027 in the report's year slicer, and rolling-window
+# measures averaging over days that hold no data. Rebuilding the bounds costs nothing here
+# because gold is a full atomic rebuild on every run.
+#
+# MAX across all three indicators, deliberately. A fact row whose date has no dim_date row
+# is orphaned — a broken relationship and blank rows in the report — so the dimension must
+# reach the *furthest* fact. Note this is the opposite aggregation to the `Data Through`
+# measure, which takes the EARLIEST of the same three dates: freshness must not hide one
+# lagging indicator behind two current ones, whereas the calendar must not fall short of
+# any of them. Same three numbers, two different jobs.
+#
+# The price bound reuses fact_price_hourly's civil-Madrid expression; to_date() on the raw
+# UTC instant would misdate the last hours of a Madrid day and could truncate the calendar
+# a day early, orphaning exactly the newest rows.
+span = spark.sql(
+    """
+    SELECT min(d) AS start_date, max(d) AS end_date
+    FROM (
+        SELECT date AS d FROM silver.demand_daily
+        UNION ALL
+        SELECT date AS d FROM silver.generation_daily
+        UNION ALL
+        SELECT to_date(from_utc_timestamp(datetime_utc, 'Europe/Madrid')) AS d
+        FROM silver.price_hourly
+    )
+    """
+).first()
+
+if span["start_date"] is None or span["end_date"] is None:
+    raise ValueError(
+        "Cannot build dim_date: no rows found in silver.demand_daily, "
+        "silver.generation_daily or silver.price_hourly."
+    )
+
+DATE_START = span["start_date"].isoformat()
+DATE_END = span["end_date"].isoformat()
+logger.info("dim_date span derived from silver: %s -> %s", DATE_START, DATE_END)
+
 # weekday(): 0 = Monday ... 6 = Sunday, so is_weekend = weekday >= 5.
 dim_date = spark.sql(
     f"""

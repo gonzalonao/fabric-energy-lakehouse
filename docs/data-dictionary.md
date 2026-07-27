@@ -57,7 +57,18 @@ corruption), while tolerating the small thermal negatives. Rule:
 Full atomic rebuild by `nb_gold_build` (runs only downstream of a green DQ gate); natural
 keys throughout — facts join dims on `date` / `technology` / `indicator` directly.
 
-### `gold.dim_date` — generated calendar, one row per day (2023-01-01 → 2027-12-31, 1826 rows)
+### `gold.dim_date` — generated calendar, one row per day, spanning exactly the loaded data
+
+Gapless between its bounds, but the bounds themselves are **derived from the facts** on every
+run (`MIN`/`MAX` across demand, generation and price), not hardcoded. It previously ran to a
+fixed `2027-12-31`, which leaked empty future years into every consumer — an unselectable 2027
+in report slicers, and rolling-window measures averaging over days holding no data.
+
+The end bound takes the **MAX** across all three indicators, which is the opposite aggregation
+to the `Data Through` measure's **MIN** of the same three dates. A calendar that falls short of
+any fact orphans rows; a freshness figure that takes the max hides a lagging indicator behind
+two current ones. Same three numbers, two different jobs.
+
 | Column | Type | Notes |
 |---|---|---|
 | `date` | date | Key |
