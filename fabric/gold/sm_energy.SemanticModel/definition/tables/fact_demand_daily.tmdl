@@ -10,13 +10,21 @@ table fact_demand_daily
 
 		changedProperty = FormatString
 
-	/// Total Demand, blanked for any period not fully covered by loaded data.
-	/// MAX(dim_date[date]) inside a month bucket is that month's last calendar day;
-	/// if it runs past the last loaded fact date the bucket is partial, so it is
-	/// omitted rather than plotted as a drop. Blank at grand total by design.
+	/// Total Demand, blanked for any period not fully covered by loaded data, so a
+	/// partial month is omitted rather than plotted as a drop. Blank at grand total
+	/// by design.
+	///
+	/// PeriodEnd is the calendar end of the visible period, COMPUTED with EOMONTH
+	/// rather than read off dim_date. The original read MAX(dim_date[date]) directly,
+	/// which worked only while dim_date was hardcoded past the data (2027-12-31): the
+	/// July bucket then held rows through the 31st. Once dim_date's bounds were derived
+	/// from the facts the calendar stopped overrunning them, MAX(dim_date[date]) in the
+	/// final bucket became the last LOADED day, PeriodEnd <= LastLoaded went trivially
+	/// true, and the partial month reappeared. The completeness test had an undeclared
+	/// dependency on gold's calendar being a superset of the facts; EOMONTH removes it.
 	measure 'Total Demand (Complete Months)' =
 			VAR LastLoaded = CALCULATE(MAX(fact_demand_daily[date]), REMOVEFILTERS())
-			VAR PeriodEnd = MAX(dim_date[date])
+			VAR PeriodEnd = EOMONTH(MAX(dim_date[date]), 0)
 			RETURN
 			    IF(PeriodEnd <= LastLoaded, [Total Demand])
 		formatString: #,0

@@ -139,7 +139,7 @@ A curated semantic model and a report over it.
 
 - `sm_energy` — a custom semantic model in **Direct Lake on OneLake** mode (not the auto-generated
   default), with four natural-key relationships, `dim_date` marked as the date table, and
-  **11 DAX measures**.
+  **12 DAX measures**.
 - `rpt_energy` — a three-page report: Demand, Generation mix, Prices.
 
 **Proved**

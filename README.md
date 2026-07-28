@@ -93,7 +93,7 @@ the terminal activity and a `Fail` activity to re-assert a red status.
 | Bronze | Raw JSON:API responses, one file per indicator per month, deterministic paths |
 | Silver | 3 typed Delta tables (daily demand, daily generation by technology, hourly prices) + quarantine |
 | Gold | `dim_date`, `dim_technology`, `dim_indicator` · `fact_demand_daily`, `fact_generation_daily`, `fact_price_hourly` |
-| Semantic | `sm_energy` — Direct Lake on OneLake, 4 natural-key relationships, **11 DAX measures** |
+| Semantic | `sm_energy` — Direct Lake on OneLake, 4 natural-key relationships, **12 DAX measures** |
 
 History runs from **2023-01** to present (~3.5 years), refreshed daily.
 

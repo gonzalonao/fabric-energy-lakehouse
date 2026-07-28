@@ -179,6 +179,33 @@ Fixing them in the model rather than the report mattered: measures live in Git, 
 travelled with the definition instead of being re-done in every consumer. A report that looks
 wrong is not automatically a formatting problem.
 
+### A guard that depended on something nobody had declared
+
+The completeness guard asked one question — *does this bucket's last calendar day fall after
+the last day of loaded data?* — and answered it by reading the maximum date visible in the
+calendar dimension. Inside a month bucket that maximum **was** the month's last calendar day,
+so the test worked, and the measure's own comment recorded that as a fact.
+
+It was not a fact. It was true only because the calendar was hardcoded to run years past the
+data, which made every bucket's last row a real calendar day rather than a data boundary. When
+the calendar's bounds were later derived from the facts — a change made for unrelated reasons,
+to stop empty future years leaking into slicers and rolling averages — the final month's last
+calendar row became the last *loaded* day. The test compared that day to itself, concluded the
+month was complete, and the partial month reappeared in the trend.
+
+Nothing broke loudly. The gold table was correct, the measure was unchanged, and the report
+rendered. The defect lived in the seam: a measure had taken a dependency on a property of a
+table in another layer, and neither side recorded it. The fix computes the month's calendar
+end (`EOMONTH`) instead of inferring it from how far the calendar happens to run, so the
+question the measure asks no longer depends on how the calendar was built. The same guard was
+then extended to the generation trend, which had never had one — and deliberately **not** to
+the renewables-share trend, because a ratio over a partial month is a valid number while a sum
+over one is a misleading dip.
+
+Two habits came out of it: a comment asserting *X is Y* deserves a second look at whether it
+means *X happens to equal Y right now*, and a change that makes a table more correct in
+isolation can still break a consumer that was relying on the older, sloppier shape.
+
 ## Release
 
 The production workspace is **never Git-bound and never hand-edited**. It is built exclusively

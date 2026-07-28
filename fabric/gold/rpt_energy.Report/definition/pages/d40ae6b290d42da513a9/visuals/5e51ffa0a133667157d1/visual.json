@@ -75,11 +75,11 @@
                       "Entity": "fact_generation_daily"
                     }
                   },
-                  "Property": "Total Generation"
+                  "Property": "Total Generation (Complete Months)"
                 }
               },
-              "queryRef": "fact_generation_daily.Total Generation",
-              "nativeQueryRef": "Total Generation"
+              "queryRef": "fact_generation_daily.Total Generation (Complete Months)",
+              "nativeQueryRef": "Total Generation (Complete Months)"
             }
           ]
         }
@@ -170,7 +170,7 @@
                 "Entity": "fact_generation_daily"
               }
             },
-            "Property": "Total Generation"
+            "Property": "Total Generation (Complete Months)"
           }
         },
         "type": "Advanced"
