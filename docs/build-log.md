@@ -206,6 +206,53 @@ Two habits came out of it: a comment asserting *X is Y* deserves a second look a
 means *X happens to equal Y right now*, and a change that makes a table more correct in
 isolation can still break a consumer that was relying on the older, sloppier shape.
 
+### The number that was wrong for a month, and the identity check behind it
+
+Looking at the repaired trend turned up something worse. The renewables share sat around
+55% for every month of the loaded history and then dropped to **27%** for July — a step, on
+the first of the month, holding flat for twenty-six days. Weather does not do that.
+
+It was almost exactly a halving, which points at the denominator rather than the numerator.
+REE's generation payload carries a `Generación total` series alongside the technologies: the
+sum of them, not one of them. It was being parsed as a technology, adding a second copy of
+the day's total generation to the denominator and leaving renewables untouched. Confirmed two
+ways — the composite's monthly figure matched the sum of the fifteen technologies to within
+6 MWh in 22.5 million, and generation divided by demand, an independently ingested indicator,
+stepped from 1.13 to 2.29 on the same date.
+
+The exclusion had been there from the start:
+
+```python
+if attributes.get("composite") is True:
+```
+
+`is True` is an identity comparison against Python's `True` singleton, not a truth test. It
+excluded the aggregate only while the payload decoded to a JSON boolean; `"true"`, `1` and a
+missing attribute all passed straight through, and `1 is True` evaluates to `False`.
+
+The reason it surfaced in one month and not the others is the more useful half of the story.
+Closed months are ingested once and their raw files never touched again. The current month is
+re-fetched and overwritten **in full every morning** by the incremental path. So a change in
+the upstream payload propagates only into the file still being rewritten, and the defect
+appears at what looks like a calendar boundary but is really a *fetch-date* boundary. The
+corollary is worth sitting with: the historical data is correct because nothing has re-read
+it, not because anything verified it. Re-running the backfill would have broken those months
+too.
+
+Three things had to be true at once for this to reach a report. The parser had a flaw. Every
+SQL proof and every evidence screenshot sampled a historical month, so none of them could
+have caught a defect that only affects freshly fetched data. And the DQ gate passed 20/20,
+because all twenty rules ask whether an individual value is sane — non-null, in range,
+correctly signed — and a composite row is entirely sane in isolation. Nothing asked whether
+the rows *added up*.
+
+The fix accepts the flag in any encoding and falls back to matching the title, with a
+regression test per encoding. More importantly the gate gained `ratio_band`, its first check
+that compares two tables rather than judging one in isolation: daily generation over daily
+demand, bounded to `[0.8, 1.6]`. The observed history sits at 1.10–1.17; the defect ran at
+2.29. A check that had existed for one afternoon would have turned a month of quietly wrong
+reporting into a failed pipeline run on day one.
+
 ## Release
 
 The production workspace is **never Git-bound and never hand-edited**. It is built exclusively

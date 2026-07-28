@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from copy import deepcopy
 from datetime import date, datetime
 from typing import Any
 
@@ -8,6 +9,7 @@ import pytest
 from energy_lakehouse.parsers import (
     PARSERS,
     ParseError,
+    is_composite_series,
     parse_demand,
     parse_generation,
     parse_prices,
@@ -52,6 +54,68 @@ def test_parse_generation_excludes_composite_total(
     assert len(technologies) == 15
     assert len(batch.rows) == 30
     assert not batch.quarantined
+
+
+COMPOSITE_TITLE = "Generación total"
+
+
+def _reflag_composite(payload: dict[str, Any], flag: Any) -> dict[str, Any]:
+    """Copy the payload, setting the composite series' flag (``...`` deletes it)."""
+    clone = deepcopy(payload)
+    for series in clone["included"]:
+        attributes = series["attributes"]
+        if attributes.get("title") == COMPOSITE_TITLE:
+            if flag is ...:
+                attributes.pop("composite", None)
+            else:
+                attributes["composite"] = flag
+    return clone
+
+
+@pytest.mark.parametrize(
+    "flag",
+    [True, "true", "True", "TRUE", "yes", 1, 1.0, ...],
+    ids=["bool", "str", "str_title", "str_upper", "str_yes", "int", "float", "absent"],
+)
+def test_parse_generation_excludes_composite_in_any_encoding(
+    generacion_good: dict[str, Any], flag: Any
+) -> None:
+    """Regression: the aggregate must be excluded however the flag is encoded.
+
+    The original guard was ``attributes.get("composite") is True`` — an identity check
+    against the ``True`` singleton, so ``1``, ``"true"`` and a missing key all passed it
+    (``1 is True`` is ``False``). The composite then parsed as an extra technology,
+    doubling every daily total and halving the renewables share. ``absent`` covers the
+    title fallback, which is the only signal left when the flag is gone entirely.
+    """
+    batch = parse_generation(_reflag_composite(generacion_good, flag))
+    assert COMPOSITE_TITLE not in {r.technology for r in batch.rows}
+    assert len({r.technology for r in batch.rows}) == 15
+
+
+@pytest.mark.parametrize("flag", [False, "false", "no", 0, 0.0], ids=lambda f: repr(f))
+def test_parse_generation_keeps_real_technologies(
+    generacion_good: dict[str, Any], flag: Any
+) -> None:
+    """A falsy composite flag must not drop a genuine technology.
+
+    The mirror of the regression above: broadening the truthiness test is only safe if
+    it stays false for every encoding of *not* composite.
+    """
+    clone = deepcopy(generacion_good)
+    for series in clone["included"]:
+        if series["attributes"].get("title") != COMPOSITE_TITLE:
+            series["attributes"]["composite"] = flag
+    batch = parse_generation(clone)
+    assert len({r.technology for r in batch.rows}) == 15
+    assert "Nuclear" in {r.technology for r in batch.rows}
+
+
+def test_composite_detection_matches_title_without_accents() -> None:
+    """The title backstop is accent- and case-insensitive, because the API is not."""
+    assert is_composite_series({"title": "GENERACION TOTAL"})
+    assert is_composite_series({"title": " Generación Total "})
+    assert not is_composite_series({"title": "Solar fotovoltaica"})
 
 
 def test_parse_generation_reads_renewable_flag_from_payload(

@@ -88,6 +88,48 @@ def value_range(
     )
 
 
+def ratio_band(
+    *,
+    table: str,
+    column: str,
+    out_of_band_days: int,
+    extreme: float | None,
+    low: float,
+    high: float,
+) -> DQResult:
+    """Flag days whose derived ratio falls outside a plausible band.
+
+    Every other check here judges one column of one table against a bound, which makes
+    them blind to a defect that leaves each individual value plausible while breaking
+    the relationship between them. The composite-series bug was exactly that: each
+    technology's daily figure was sane, and the total was double what it should be.
+
+    Args:
+        table: Table under test (the numerator's table, for reporting).
+        column: A label for the ratio being tested, e.g. ``generation/demand``.
+        out_of_band_days: Number of days observed outside the band.
+        extreme: The ratio furthest outside the band, or ``None`` if all days passed.
+        low: Inclusive lower bound of the plausible band.
+        high: Inclusive upper bound.
+
+    Returns:
+        A PASS/FAIL result; the threshold is zero tolerated days.
+    """
+    shown = "n/a" if extreme is None else f"{extreme:.2f}"
+    return DQResult(
+        check="ratio_band",
+        table=table,
+        column=column,
+        status=_verdict(out_of_band_days == 0),
+        observed=float(extreme) if extreme is not None else 0.0,
+        threshold=high,
+        details=(
+            f"{out_of_band_days} day(s) with {column} outside "
+            f"[{low}, {high}]; furthest {shown}"
+        ),
+    )
+
+
 def freshness(*, table: str, max_date: date | None, min_expected: date) -> DQResult:
     """Flag a table whose most recent date is behind ``min_expected``.
 

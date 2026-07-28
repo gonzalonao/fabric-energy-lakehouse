@@ -24,9 +24,21 @@ were profiled before asserting.
 | Column | Type | Notes |
 |---|---|---|
 | `date` | date | Local civil date |
-| `technology` | string | REE technology name (e.g. `Eólica`). The composite `Generación total` is excluded |
+| `technology` | string | REE technology name (e.g. `Eólica`). The composite `Generación total` is excluded — see the note below; getting this wrong doubles every daily total |
 | `is_renewable` | boolean | From the payload's own classification (`attributes.type == "Renovable"`), not a hardcoded map |
 | `value` | double | Daily generation for the technology, MWh. **DQ policy:** renewables must be `>= 0`; thermal (non-renewable) may be slightly negative — see note below |
+
+**The composite exclusion, and why it is defended twice.** REE's generation payload
+carries `Generación total` alongside the technologies — the sum of them, not one of
+them. Included, it lands as an extra row per day, doubles the daily total and **halves
+the renewables share**, while every individual value stays perfectly plausible. It is
+excluded on the payload's own `composite` flag, accepted in any encoding (boolean,
+`"true"`, `1`), with an accent- and case-insensitive title match as a backstop. The
+belt-and-braces is not paranoia: the original check was `composite is True`, an identity
+test that only matched a JSON boolean, and it let the aggregate through for every month
+whose Bronze file had been re-fetched. `ratio_band` in the DQ gate now bounds
+generation ÷ demand to `[0.8, 1.6]`, so a recurrence fails the gate rather than reaching
+a report.
 
 **Negative generation (real data, not corruption).** REE reports small negative daily values
 for **thermal** technologies on near-idle days — station self-consumption net of output.

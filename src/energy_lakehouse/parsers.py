@@ -37,6 +37,14 @@ PRICES = "precios_mercados"
 # The API tags each generation series with its own renewable classification.
 RENEWABLE_TYPE = "Renovable"
 
+# Composite (aggregate) generation series, which must never be parsed as technologies.
+# The primary signal is the payload's own ``composite`` attribute; the title set is a
+# backstop for payloads that omit or restyle that flag. Compared case-folded and
+# accent-stripped, because the API is not consistent about either.
+_COMPOSITE_TITLES = frozenset({"generacion total"})
+_TRUTHY_STRINGS = frozenset({"true", "t", "yes", "y", "1"})
+_ACCENTS = str.maketrans("áéíóúüñÁÉÍÓÚÜÑ", "aeiouunAEIOUUN")
+
 # Fields we read out of each raw value entry.
 VALUE_KEY = "value"
 DATETIME_KEY = "datetime"
@@ -145,13 +153,48 @@ def parse_demand(payload: Mapping[str, Any]) -> ParsedBatch[DemandRow]:
     return ParsedBatch(rows=rows, quarantined=quarantined)
 
 
+def _normalize(text: str) -> str:
+    """Case-fold and strip accents, so title matching survives API restyling."""
+    return text.translate(_ACCENTS).strip().casefold()
+
+
+def is_composite_series(attributes: Mapping[str, Any]) -> bool:
+    """Return whether a generation series is an aggregate rather than a technology.
+
+    Two independent signals, because relying on one of them cost a production defect.
+    The original test was ``attributes.get("composite") is True`` — an *identity* check
+    against Python's ``True`` singleton, so it passed only for a JSON boolean and let
+    ``"true"``, ``1`` and a missing flag straight through (``1 is True`` is ``False``).
+    The composite then parsed as a sixteenth technology, doubling every daily total and
+    halving the renewables share for any month whose Bronze file had been re-fetched.
+
+    Args:
+        attributes: The ``attributes`` object of one series in the payload's
+            ``included`` array.
+
+    Returns:
+        ``True`` if the series is the ``Generación total`` aggregate, by either its
+        ``composite`` flag (in any plausible encoding) or its title.
+    """
+    flag = attributes.get("composite")
+    if isinstance(flag, bool):
+        return flag
+    if isinstance(flag, str):
+        return _normalize(flag) in _TRUTHY_STRINGS
+    if isinstance(flag, int | float):
+        return bool(flag)
+    title = attributes.get("title")
+    return isinstance(title, str) and _normalize(title) in _COMPOSITE_TITLES
+
+
 def parse_generation(payload: Mapping[str, Any]) -> ParsedBatch[GenerationRow]:
     """Parse the generation payload into one row per (day, technology).
 
-    The ``Generación total`` series is a composite aggregate (``composite=True``) and is
-    skipped: it is the sum of the technologies, not a technology, and including it would
-    double every daily total. The renewable flag comes from each series' own
-    classification.
+    The ``Generación total`` series is a composite aggregate and is skipped: it is the
+    sum of the technologies, not a technology, and including it doubles every daily
+    total. Detection is delegated to :func:`is_composite_series`, which accepts the flag
+    in any encoding and falls back to the title. The renewable flag comes from each
+    series' own classification.
 
     Args:
         payload: The raw REE JSON:API response for ``generacion/estructura-generacion``.
@@ -166,7 +209,7 @@ def parse_generation(payload: Mapping[str, Any]) -> ParsedBatch[GenerationRow]:
     quarantined: list[QuarantineRecord] = []
     for series in _included(payload):
         attributes = series.get("attributes", {})
-        if attributes.get("composite") is True:
+        if is_composite_series(attributes):
             continue
         technology = attributes.get("title")
         if not isinstance(technology, str):
