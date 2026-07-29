@@ -22,6 +22,23 @@ table fact_generation_daily
 
 		annotation PBI_FormatHint = {"isGeneralNumber":true}
 
+	/// Total Generation, blanked for any period not fully covered by loaded data —
+	/// the same completeness rule as Total Demand (Complete Months), and applied for
+	/// the same reason: a SUM over a partial month dives at the right edge and reads
+	/// as a collapse in output rather than a month still being written.
+	///
+	/// Deliberately NOT applied to Renewables Share %: that measure is a ratio, and a
+	/// ratio over a partial month is a valid number (the share of what has loaded so
+	/// far), not a distorted one. Guarding sums and leaving ratios alone is the rule.
+	measure 'Total Generation (Complete Months)' =
+			VAR LastLoaded = CALCULATE(MAX(fact_generation_daily[date]), REMOVEFILTERS())
+			VAR PeriodEnd = EOMONTH(MAX(dim_date[date]), 0)
+			RETURN
+			    IF(PeriodEnd <= LastLoaded, [Total Generation])
+		lineageTag: 3cf71151-a1a0-4659-b321-1b898cd14af0
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
 	column date
 		dataType: dateTime
 		formatString: General Date

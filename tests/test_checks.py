@@ -80,3 +80,49 @@ def test_row_count_delta_fails_on_large_swing() -> None:
     r = checks.row_count_delta(table="t", current=40, previous=100)
     assert r.status is DQStatus.FAIL
     assert r.observed == 60.0
+
+
+def test_ratio_band_passes_when_every_day_is_in_band() -> None:
+    r = checks.ratio_band(
+        table="silver.generation_daily",
+        column="generation/demand",
+        out_of_band_days=0,
+        extreme=None,
+        low=0.8,
+        high=1.6,
+    )
+    assert r.status is DQStatus.PASS
+    assert "0 day(s)" in r.details
+
+
+def test_ratio_band_fails_on_the_doubled_total() -> None:
+    """The composite-series defect, expressed as the check that would have caught it.
+
+    Generation ran at 2.29x demand for 26 days while every individual value stayed
+    plausible, so no single-column check could see it.
+    """
+    r = checks.ratio_band(
+        table="silver.generation_daily",
+        column="generation/demand",
+        out_of_band_days=26,
+        extreme=2.29,
+        low=0.8,
+        high=1.6,
+    )
+    assert r.status is DQStatus.FAIL
+    assert r.observed == 2.29
+    assert "furthest 2.29" in r.details
+
+
+def test_ratio_band_fails_on_an_undershoot_too() -> None:
+    """A collapse is as much a break as a doubling — the band is two-sided."""
+    r = checks.ratio_band(
+        table="silver.generation_daily",
+        column="generation/demand",
+        out_of_band_days=1,
+        extreme=0.41,
+        low=0.8,
+        high=1.6,
+    )
+    assert r.status is DQStatus.FAIL
+    assert r.observed == 0.41

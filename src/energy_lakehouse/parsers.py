@@ -3,8 +3,9 @@
 Each indicator has its own parser because the three series differ in shape and grain:
 
 * demand: one series, one value per day, keyed on the civil date.
-* generation: sixteen technology series (the ``Generación total`` composite excluded),
-  keyed on ``(date, technology)``, with the renewable flag taken from the payload.
+* generation: the technology series (the ``Generación total`` composite excluded, any
+  unrecognised series quarantined), keyed on ``(date, technology)``, with the renewable
+  flag taken from the payload.
 * prices: two series at possibly different grains, keyed on ``(datetime_utc, series)``,
   with the per-observation grain derived from timestamp spacing.
 
@@ -36,6 +37,26 @@ PRICES = "precios_mercados"
 
 # The API tags each generation series with its own renewable classification.
 RENEWABLE_TYPE = "Renovable"
+
+# Identifying the `Generación total` aggregate, which must never be parsed as a
+# technology. Three independent signals, OR'd, because REE has changed two of them
+# under us: as of 2026-07-28 the payload reports `composite: False` on *every* series
+# (the flag carries no information at all any more) and renamed the aggregate's type
+# from `Generación total` to `total`. Only the title survived both changes.
+#
+# OR'd, specifically. The previous version chained them — flag first, title as a
+# fallback — so a flag that had gone dead could veto a title that was still correct.
+# No signal here is allowed to answer "not composite" on another's behalf.
+_COMPOSITE_TITLES = frozenset({"generacion total"})
+_COMPOSITE_TYPES = frozenset({"total", "generacion total"})
+_TRUTHY_STRINGS = frozenset({"true", "t", "yes", "y", "1"})
+
+# The whitelist that makes the above a belt-and-braces rather than the only defence: a
+# real technology is typed Renovable or No-Renovable. Anything else is not a technology,
+# whether or not we recognise it as a known aggregate.
+_TECHNOLOGY_TYPES = frozenset({"renovable", "no-renovable"})
+
+_ACCENTS = str.maketrans("áéíóúüñÁÉÍÓÚÜÑ", "aeiouunAEIOUUN")
 
 # Fields we read out of each raw value entry.
 VALUE_KEY = "value"
@@ -145,13 +166,92 @@ def parse_demand(payload: Mapping[str, Any]) -> ParsedBatch[DemandRow]:
     return ParsedBatch(rows=rows, quarantined=quarantined)
 
 
+def _normalize(text: str) -> str:
+    """Case-fold and strip accents, so title matching survives API restyling."""
+    return text.translate(_ACCENTS).strip().casefold()
+
+
+def _text(attributes: Mapping[str, Any], key: str) -> str | None:
+    """Return a normalized string attribute, or ``None`` if it isn't one."""
+    value = attributes.get(key)
+    return _normalize(value) if isinstance(value, str) else None
+
+
+def _flag_is_true(flag: object) -> bool:
+    """Interpret a JSON flag as a boolean across the encodings REE has used."""
+    if isinstance(flag, bool):
+        return flag
+    if isinstance(flag, str):
+        return _normalize(flag) in _TRUTHY_STRINGS
+    if isinstance(flag, int | float):
+        return bool(flag)
+    return False
+
+
+def is_composite_series(attributes: Mapping[str, Any]) -> bool:
+    """Return whether a generation series is a known aggregate, not a technology.
+
+    Any one of three signals is enough, and none may veto the others — the ordering
+    that let this through twice is the reason for that emphasis:
+
+    * ``composite`` truthy in any encoding (boolean, ``"true"``, ``1``);
+    * the title being ``Generación total``;
+    * the type being ``total`` (or the older ``Generación total``).
+
+    History, because the shape of the mistake matters more than the fix. The original
+    guard was ``attributes.get("composite") is True``, an identity comparison against
+    Python's ``True`` singleton. The first repair broadened the encodings but kept the
+    title as a *fallback* — reached only when the flag was absent. Then REE flipped
+    ``composite`` to ``False`` on every series and renamed the aggregate's type, so a
+    dead signal returned ``False`` and the live signal was never consulted. The
+    aggregate parsed as an extra technology, doubling every daily total and halving the
+    renewables share on any file that had been re-fetched.
+
+    Args:
+        attributes: The ``attributes`` object of one series in ``included``.
+
+    Returns:
+        ``True`` if the series is a known aggregate.
+    """
+    return (
+        _flag_is_true(attributes.get("composite"))
+        or _text(attributes, "title") in _COMPOSITE_TITLES
+        or _text(attributes, "type") in _COMPOSITE_TYPES
+    )
+
+
+def is_technology_series(attributes: Mapping[str, Any]) -> bool:
+    """Return whether a series is typed as a real technology.
+
+    A whitelist, deliberately: the payload types every genuine technology ``Renovable``
+    or ``No-Renovable``, so anything else is not one — whether or not
+    :func:`is_composite_series` recognises it. Unrecognised series are quarantined
+    rather than dropped, so the next upstream rename is visible in a table instead of
+    silently changing a total.
+
+    Args:
+        attributes: The ``attributes`` object of one series in ``included``.
+
+    Returns:
+        ``True`` if the series' type is a known technology classification.
+    """
+    return _text(attributes, "type") in _TECHNOLOGY_TYPES
+
+
 def parse_generation(payload: Mapping[str, Any]) -> ParsedBatch[GenerationRow]:
     """Parse the generation payload into one row per (day, technology).
 
-    The ``Generación total`` series is a composite aggregate (``composite=True``) and is
-    skipped: it is the sum of the technologies, not a technology, and including it would
-    double every daily total. The renewable flag comes from each series' own
-    classification.
+    Each series is triaged three ways rather than two:
+
+    * a known aggregate (:func:`is_composite_series`) is skipped silently — expected,
+      not newsworthy. Including it would double every daily total;
+    * a series typed as a real technology (:func:`is_technology_series`) is parsed;
+    * anything else is **quarantined**, not dropped. That third branch is the point: a
+      silently discarded series changes a total with nothing to show for it, whereas a
+      quarantined one leaves a row naming the type we didn't recognise. REE has already
+      renamed the aggregate's type once mid-project.
+
+    The renewable flag comes from each series' own classification.
 
     Args:
         payload: The raw REE JSON:API response for ``generacion/estructura-generacion``.
@@ -166,10 +266,16 @@ def parse_generation(payload: Mapping[str, Any]) -> ParsedBatch[GenerationRow]:
     quarantined: list[QuarantineRecord] = []
     for series in _included(payload):
         attributes = series.get("attributes", {})
-        if attributes.get("composite") is True:
+        if is_composite_series(attributes):
             continue
         technology = attributes.get("title")
-        if not isinstance(technology, str):
+        if not is_technology_series(attributes) or not isinstance(technology, str):
+            reason = (
+                f"unrecognised generation series: title={technology!r} "
+                f"type={attributes.get('type')!r} — neither a known aggregate nor a "
+                "typed technology"
+            )
+            quarantined.append(_quarantine(attributes, GENERATION, reason))
             continue
         is_renewable = attributes.get("type") == RENEWABLE_TYPE
         for entry in _values(series):

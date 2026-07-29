@@ -40,6 +40,15 @@ PRICE_MAX = 4000.0
 GENERATION_MIN = -1000.0
 FRESHNESS_MAX_LAG_DAYS = 1
 
+# Daily generation over daily demand. Peninsular Spain generates a little more than it
+# consumes (net exports plus losses); observed 1.10-1.17 across the loaded history. The
+# band is deliberately wide — it exists to catch structural breakage, not to police
+# weather. A doubling (2.29, when the `Generación total` composite was parsed as a
+# technology) is far outside it; so is a collapse from a partially-loaded day.
+GEN_DEMAND_MIN = 0.8
+GEN_DEMAND_MAX = 1.6
+GEN_DEMAND_LABEL = "generation/demand"
+
 _ROW_COUNT_CHECK = "row_count"
 
 
@@ -167,6 +176,32 @@ def _row_count_info(table: str, count: int) -> DQResult:
     )
 
 
+def _gen_demand_ratio(spark: SparkSession) -> tuple[int, float | None]:
+    """Return (days outside the band, the ratio furthest outside it).
+
+    Compares the two indicators only on dates present in *both*, so a day loaded for one
+    and not yet the other is out of scope rather than a false alarm.
+    """
+    daily = (
+        "SELECT g.date AS date, sum(g.value) / d.value AS ratio "
+        "FROM silver.generation_daily g "
+        "JOIN silver.demand_daily d ON d.date = g.date "
+        "WHERE d.value > 0 "
+        "GROUP BY g.date, d.value"
+    )
+    row = spark.sql(
+        "SELECT "
+        f"  sum(CASE WHEN ratio < {GEN_DEMAND_MIN} OR ratio > {GEN_DEMAND_MAX} "
+        "       THEN 1 ELSE 0 END) AS bad, "
+        f"  max(CASE WHEN ratio > {GEN_DEMAND_MAX} THEN ratio END) AS hi, "
+        f"  min(CASE WHEN ratio < {GEN_DEMAND_MIN} THEN ratio END) AS lo "
+        f"FROM ({daily})"
+    ).collect()[0]
+    bad = int(row["bad"] or 0)
+    extreme = row["hi"] if row["hi"] is not None else row["lo"]
+    return bad, float(extreme) if extreme is not None else None
+
+
 def collect_silver_results(spark: SparkSession) -> list[DQResult]:
     """Run every silver-stage check and return the verdicts (no writing, no raising)."""
     results: list[DQResult] = []
@@ -204,6 +239,19 @@ def collect_silver_results(spark: SparkSession) -> list[DQResult]:
                 min_expected=floor,
             )
         )
+    # Cross-indicator: the only check here that compares two tables. Everything above
+    # judges a table in isolation, which is why a doubled generation total passed 20/20.
+    out_of_band, extreme = _gen_demand_ratio(spark)
+    results.append(
+        checks.ratio_band(
+            table="silver.generation_daily",
+            column=GEN_DEMAND_LABEL,
+            out_of_band_days=out_of_band,
+            extreme=extreme,
+            low=GEN_DEMAND_MIN,
+            high=GEN_DEMAND_MAX,
+        )
+    )
     return results
 
 

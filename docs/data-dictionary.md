@@ -24,9 +24,29 @@ were profiled before asserting.
 | Column | Type | Notes |
 |---|---|---|
 | `date` | date | Local civil date |
-| `technology` | string | REE technology name (e.g. `Eólica`). The composite `Generación total` is excluded |
+| `technology` | string | REE technology name (e.g. `Eólica`). The composite `Generación total` is excluded — see the note below; getting this wrong doubles every daily total |
 | `is_renewable` | boolean | From the payload's own classification (`attributes.type == "Renovable"`), not a hardcoded map |
 | `value` | double | Daily generation for the technology, MWh. **DQ policy:** renewables must be `>= 0`; thermal (non-renewable) may be slightly negative — see note below |
+
+**The composite exclusion, and why it is defended three ways.** REE's generation payload
+carries `Generación total` alongside the technologies — the sum of them, not one of
+them. Included, it lands as an extra row per day, doubles the daily total and **halves
+the renewables share**, while every individual value stays perfectly plausible.
+
+A series is treated as an aggregate if **any** of three signals fires: a truthy
+`composite` flag (in any encoding), the title `Generación total`, or the type `total`
+(formerly `Generación total`). They are OR'd, and deliberately so — REE has changed two
+of them mid-project. As of 2026-07-28 `composite` reads `False` on *every* series and no
+longer distinguishes anything, and the aggregate's type was renamed. Only the title
+survived both changes, and an earlier version that consulted the flag first let the dead
+signal answer on behalf of the live ones.
+
+On top of that, `type` acts as a **whitelist**: a real technology is `Renovable` or
+`No-Renovable`, and anything else is **quarantined rather than dropped**, so the next
+upstream rename surfaces as a row in `silver.quarantine` instead of a quietly changed
+total. And `ratio_band` in the DQ gate bounds generation ÷ demand to `[0.8, 1.6]`, so a
+recurrence fails the pipeline rather than reaching a report — as it did, on the first run
+after the second attempt at this fix.
 
 **Negative generation (real data, not corruption).** REE reports small negative daily values
 for **thermal** technologies on near-idle days — station self-consumption net of output.
@@ -57,7 +77,18 @@ corruption), while tolerating the small thermal negatives. Rule:
 Full atomic rebuild by `nb_gold_build` (runs only downstream of a green DQ gate); natural
 keys throughout — facts join dims on `date` / `technology` / `indicator` directly.
 
-### `gold.dim_date` — generated calendar, one row per day (2023-01-01 → 2027-12-31, 1826 rows)
+### `gold.dim_date` — generated calendar, one row per day, spanning exactly the loaded data
+
+Gapless between its bounds, but the bounds themselves are **derived from the facts** on every
+run (`MIN`/`MAX` across demand, generation and price), not hardcoded. It previously ran to a
+fixed `2027-12-31`, which leaked empty future years into every consumer — an unselectable 2027
+in report slicers, and rolling-window measures averaging over days holding no data.
+
+The end bound takes the **MAX** across all three indicators, which is the opposite aggregation
+to the `Data Through` measure's **MIN** of the same three dates. A calendar that falls short of
+any fact orphans rows; a freshness figure that takes the max hides a lagging indicator behind
+two current ones. Same three numbers, two different jobs.
+
 | Column | Type | Notes |
 |---|---|---|
 | `date` | date | Key |

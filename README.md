@@ -16,6 +16,10 @@ Direct Lake semantic model.
 
 **Status: `v1.0.0` — deployed to a production workspace and verified end to end.**
 
+🎬 **[Watch the 90-second demo](https://github.com/gonzalonao/fabric-energy-lakehouse/releases/download/v1.0.0/fabric-energy-lakehouse-demo.mp4)** — source-controlled item
+definitions, the medallion chain running green, the DQ results table, a real failure alert,
+the deployed production workspace, and a scheduled run nobody triggered.
+
 ---
 
 ## What this demonstrates
@@ -89,7 +93,7 @@ the terminal activity and a `Fail` activity to re-assert a red status.
 | Bronze | Raw JSON:API responses, one file per indicator per month, deterministic paths |
 | Silver | 3 typed Delta tables (daily demand, daily generation by technology, hourly prices) + quarantine |
 | Gold | `dim_date`, `dim_technology`, `dim_indicator` · `fact_demand_daily`, `fact_generation_daily`, `fact_price_hourly` |
-| Semantic | `sm_energy` — Direct Lake on OneLake, 4 natural-key relationships, **11 DAX measures** |
+| Semantic | `sm_energy` — Direct Lake on OneLake, 4 natural-key relationships, **12 DAX measures** |
 
 History runs from **2023-01** to present (~3.5 years), refreshed daily.
 

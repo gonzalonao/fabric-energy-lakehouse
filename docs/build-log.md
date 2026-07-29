@@ -179,6 +179,106 @@ Fixing them in the model rather than the report mattered: measures live in Git, 
 travelled with the definition instead of being re-done in every consumer. A report that looks
 wrong is not automatically a formatting problem.
 
+### A guard that depended on something nobody had declared
+
+The completeness guard asked one question — *does this bucket's last calendar day fall after
+the last day of loaded data?* — and answered it by reading the maximum date visible in the
+calendar dimension. Inside a month bucket that maximum **was** the month's last calendar day,
+so the test worked, and the measure's own comment recorded that as a fact.
+
+It was not a fact. It was true only because the calendar was hardcoded to run years past the
+data, which made every bucket's last row a real calendar day rather than a data boundary. When
+the calendar's bounds were later derived from the facts — a change made for unrelated reasons,
+to stop empty future years leaking into slicers and rolling averages — the final month's last
+calendar row became the last *loaded* day. The test compared that day to itself, concluded the
+month was complete, and the partial month reappeared in the trend.
+
+Nothing broke loudly. The gold table was correct, the measure was unchanged, and the report
+rendered. The defect lived in the seam: a measure had taken a dependency on a property of a
+table in another layer, and neither side recorded it. The fix computes the month's calendar
+end (`EOMONTH`) instead of inferring it from how far the calendar happens to run, so the
+question the measure asks no longer depends on how the calendar was built. The same guard was
+then extended to the generation trend, which had never had one — and deliberately **not** to
+the renewables-share trend, because a ratio over a partial month is a valid number while a sum
+over one is a misleading dip.
+
+Two habits came out of it: a comment asserting *X is Y* deserves a second look at whether it
+means *X happens to equal Y right now*, and a change that makes a table more correct in
+isolation can still break a consumer that was relying on the older, sloppier shape.
+
+### The number that was wrong for a month, and the identity check behind it
+
+Looking at the repaired trend turned up something worse. The renewables share sat around
+55% for every month of the loaded history and then dropped to **27%** for July — a step, on
+the first of the month, holding flat for twenty-six days. Weather does not do that.
+
+It was almost exactly a halving, which points at the denominator rather than the numerator.
+REE's generation payload carries a `Generación total` series alongside the technologies: the
+sum of them, not one of them. It was being parsed as a technology, adding a second copy of
+the day's total generation to the denominator and leaving renewables untouched. Confirmed two
+ways — the composite's monthly figure matched the sum of the fifteen technologies to within
+6 MWh in 22.5 million, and generation divided by demand, an independently ingested indicator,
+stepped from 1.13 to 2.29 on the same date.
+
+The exclusion had been there from the start:
+
+```python
+if attributes.get("composite") is True:
+```
+
+`is True` is an identity comparison against Python's `True` singleton, not a truth test. It
+excluded the aggregate only while the payload decoded to a JSON boolean; `"true"`, `1` and a
+missing attribute all passed straight through, and `1 is True` evaluates to `False`.
+
+The reason it surfaced in one month and not the others is the more useful half of the story.
+Closed months are ingested once and their raw files never touched again. The current month is
+re-fetched and overwritten **in full every morning** by the incremental path. So a change in
+the upstream payload propagates only into the file still being rewritten, and the defect
+appears at what looks like a calendar boundary but is really a *fetch-date* boundary. The
+corollary is worth sitting with: the historical data is correct because nothing has re-read
+it, not because anything verified it. Re-running the backfill would have broken those months
+too.
+
+Three things had to be true at once for this to reach a report. The parser had a flaw. Every
+SQL proof and every evidence screenshot sampled a historical month, so none of them could
+have caught a defect that only affects freshly fetched data. And the DQ gate passed 20/20,
+because all twenty rules ask whether an individual value is sane — non-null, in range,
+correctly signed — and a composite row is entirely sane in isolation. Nothing asked whether
+the rows *added up*.
+
+The first fix accepted the flag in any encoding and fell back to matching the title, with a
+regression test per encoding. Alongside it the gate gained `ratio_band`, its first check that
+compares two tables rather than judging one in isolation: daily generation over daily demand,
+bounded to `[0.8, 1.6]`. The observed history sits at 1.10–1.17; the defect ran at 2.29.
+
+**That fix did not work, and finding out took one pipeline run.** The next scheduled refresh
+re-fetched the month and the gate failed immediately — `ratio_band`, 28 days out of band,
+furthest 2.30 — with gold skipped and the previous good data untouched, because the gate sits
+between the two.
+
+Reading the live payload rather than reasoning about it showed why. REE had changed **both**
+discriminators. `composite` now reads `False` on *every* series, aggregate included, so the
+flag distinguishes nothing at all; and the aggregate's `type` had been renamed from
+`Generación total` to `total`. Only the title was unchanged — and the title was exactly the
+signal the fix had demoted to a fallback, reachable only when the flag was missing. A dead
+signal answered on behalf of a live one. The same mistake as the original, one layer further
+in: not trusting a wrong value, but letting one source of truth speak for the others.
+
+The rewrite treats the three signals as independent and OR's them, so none can veto another.
+More usefully, it inverts the default: `type` became a whitelist — a real technology is
+`Renovable` or `No-Renovable`, and anything else is **quarantined rather than dropped**. A
+discarded series would change every total with nothing left to explain it; a quarantined one
+leaves a row naming the type that wasn't recognised. Given the upstream renamed a type once
+mid-project, the next rename should arrive as a table entry rather than as a number that
+moved.
+
+Three lessons, in ascending order of how much they cost. A guard is only as good as its
+weakest signal *if the signals are chained* — OR them and the weakest becomes free. An
+upstream schema is not a constant, and code that reads one should say what it does when the
+shape changes, not assume it won't. And the check that caught this on day one, rather than
+day thirty, was the only one in the suite that compared two independently ingested indicators
+instead of validating a column against a bound.
+
 ## Release
 
 The production workspace is **never Git-bound and never hand-edited**. It is built exclusively
