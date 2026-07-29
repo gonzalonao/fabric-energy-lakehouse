@@ -246,12 +246,38 @@ because all twenty rules ask whether an individual value is sane — non-null, i
 correctly signed — and a composite row is entirely sane in isolation. Nothing asked whether
 the rows *added up*.
 
-The fix accepts the flag in any encoding and falls back to matching the title, with a
-regression test per encoding. More importantly the gate gained `ratio_band`, its first check
-that compares two tables rather than judging one in isolation: daily generation over daily
-demand, bounded to `[0.8, 1.6]`. The observed history sits at 1.10–1.17; the defect ran at
-2.29. A check that had existed for one afternoon would have turned a month of quietly wrong
-reporting into a failed pipeline run on day one.
+The first fix accepted the flag in any encoding and fell back to matching the title, with a
+regression test per encoding. Alongside it the gate gained `ratio_band`, its first check that
+compares two tables rather than judging one in isolation: daily generation over daily demand,
+bounded to `[0.8, 1.6]`. The observed history sits at 1.10–1.17; the defect ran at 2.29.
+
+**That fix did not work, and finding out took one pipeline run.** The next scheduled refresh
+re-fetched the month and the gate failed immediately — `ratio_band`, 28 days out of band,
+furthest 2.30 — with gold skipped and the previous good data untouched, because the gate sits
+between the two.
+
+Reading the live payload rather than reasoning about it showed why. REE had changed **both**
+discriminators. `composite` now reads `False` on *every* series, aggregate included, so the
+flag distinguishes nothing at all; and the aggregate's `type` had been renamed from
+`Generación total` to `total`. Only the title was unchanged — and the title was exactly the
+signal the fix had demoted to a fallback, reachable only when the flag was missing. A dead
+signal answered on behalf of a live one. The same mistake as the original, one layer further
+in: not trusting a wrong value, but letting one source of truth speak for the others.
+
+The rewrite treats the three signals as independent and OR's them, so none can veto another.
+More usefully, it inverts the default: `type` became a whitelist — a real technology is
+`Renovable` or `No-Renovable`, and anything else is **quarantined rather than dropped**. A
+discarded series would change every total with nothing left to explain it; a quarantined one
+leaves a row naming the type that wasn't recognised. Given the upstream renamed a type once
+mid-project, the next rename should arrive as a table entry rather than as a number that
+moved.
+
+Three lessons, in ascending order of how much they cost. A guard is only as good as its
+weakest signal *if the signals are chained* — OR them and the weakest becomes free. An
+upstream schema is not a constant, and code that reads one should say what it does when the
+shape changes, not assume it won't. And the check that caught this on day one, rather than
+day thirty, was the only one in the suite that compared two independently ingested indicators
+instead of validating a column against a bound.
 
 ## Release
 

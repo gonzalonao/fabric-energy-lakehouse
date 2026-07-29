@@ -74,23 +74,56 @@ def _reflag_composite(payload: dict[str, Any], flag: Any) -> dict[str, Any]:
 
 @pytest.mark.parametrize(
     "flag",
-    [True, "true", "True", "TRUE", "yes", 1, 1.0, ...],
-    ids=["bool", "str", "str_title", "str_upper", "str_yes", "int", "float", "absent"],
+    [True, "true", "TRUE", "yes", 1, 1.0, ..., False, "false", 0, None],
+    ids=[
+        "true",
+        "str_true",
+        "str_upper",
+        "str_yes",
+        "int_1",
+        "float_1",
+        "absent",
+        "false",
+        "str_false",
+        "int_0",
+        "null",
+    ],
 )
-def test_parse_generation_excludes_composite_in_any_encoding(
+def test_parse_generation_excludes_composite_whatever_the_flag_says(
     generacion_good: dict[str, Any], flag: Any
 ) -> None:
-    """Regression: the aggregate must be excluded however the flag is encoded.
+    """The aggregate is excluded regardless of the ``composite`` flag's value.
 
-    The original guard was ``attributes.get("composite") is True`` — an identity check
-    against the ``True`` singleton, so ``1``, ``"true"`` and a missing key all passed it
-    (``1 is True`` is ``False``). The composite then parsed as an extra technology,
-    doubling every daily total and halving the renewables share. ``absent`` covers the
-    title fallback, which is the only signal left when the flag is gone entirely.
+    The falsy half of this list is the one that matters. Both previous versions of this
+    guard consulted the flag *first* and let its answer stand: ``is True`` rejected
+    everything but a boolean, and the repair after it treated the title as a fallback
+    reached only when the flag was absent. When REE set ``composite: False`` on every
+    series, a dead signal answered on behalf of two live ones.
     """
     batch = parse_generation(_reflag_composite(generacion_good, flag))
     assert COMPOSITE_TITLE not in {r.technology for r in batch.rows}
     assert len({r.technology for r in batch.rows}) == 15
+
+
+def test_parse_generation_handles_the_live_2026_07_payload_shape(
+    generacion_good: dict[str, Any],
+) -> None:
+    """The payload as REE actually serves it since 2026-07: two signals changed at once.
+
+    ``composite`` is ``False`` on *every* series (so it distinguishes nothing) and the
+    aggregate's type was renamed ``Generación total`` -> ``total``. Only the title
+    survived both changes, which is precisely why no single signal is trusted alone.
+    """
+    clone = deepcopy(generacion_good)
+    for series in clone["included"]:
+        attributes = series["attributes"]
+        attributes["composite"] = False
+        if attributes["title"] == COMPOSITE_TITLE:
+            attributes["type"] = "total"
+    batch = parse_generation(clone)
+    assert COMPOSITE_TITLE not in {r.technology for r in batch.rows}
+    assert len({r.technology for r in batch.rows}) == 15
+    assert not batch.quarantined
 
 
 @pytest.mark.parametrize("flag", [False, "false", "no", 0, 0.0], ids=lambda f: repr(f))
@@ -99,8 +132,8 @@ def test_parse_generation_keeps_real_technologies(
 ) -> None:
     """A falsy composite flag must not drop a genuine technology.
 
-    The mirror of the regression above: broadening the truthiness test is only safe if
-    it stays false for every encoding of *not* composite.
+    The mirror of the regression above: broadening the exclusion is only safe if it
+    stays false for every series the payload types as a real technology.
     """
     clone = deepcopy(generacion_good)
     for series in clone["included"]:
@@ -111,11 +144,38 @@ def test_parse_generation_keeps_real_technologies(
     assert "Nuclear" in {r.technology for r in batch.rows}
 
 
-def test_composite_detection_matches_title_without_accents() -> None:
-    """The title backstop is accent- and case-insensitive, because the API is not."""
+def test_parse_generation_quarantines_an_unrecognised_series(
+    generacion_good: dict[str, Any],
+) -> None:
+    """An unknown series type is quarantined, never silently dropped.
+
+    A dropped series changes every total with nothing left to explain it; a quarantined
+    one leaves a row naming the type we failed to recognise. Given REE has renamed a
+    type once already, the next rename should surface in a table rather than in a
+    number.
+    """
+    clone = deepcopy(generacion_good)
+    for series in clone["included"]:
+        if series["attributes"]["title"] == "Nuclear":
+            series["attributes"]["type"] = "Almacenamiento"
+    batch = parse_generation(clone)
+    assert "Nuclear" not in {r.technology for r in batch.rows}
+    assert len(batch.quarantined) == 1
+    assert "Almacenamiento" in batch.quarantined[0].reason
+
+
+def test_no_composite_signal_can_veto_another() -> None:
+    """Each signal alone is sufficient; a false flag never overrules title or type."""
+    assert is_composite_series({"composite": False, "title": "Generación total"})
+    assert is_composite_series({"composite": False, "type": "total", "title": "x"})
+    assert is_composite_series({"composite": True, "title": "x", "type": "Renovable"})
+    # Accent- and case-insensitive, because the API is consistent about neither.
     assert is_composite_series({"title": "GENERACION TOTAL"})
     assert is_composite_series({"title": " Generación Total "})
-    assert not is_composite_series({"title": "Solar fotovoltaica"})
+    # And a genuine technology is never caught by any of them.
+    assert not is_composite_series(
+        {"composite": False, "title": "Solar fotovoltaica", "type": "Renovable"}
+    )
 
 
 def test_parse_generation_reads_renewable_flag_from_payload(
