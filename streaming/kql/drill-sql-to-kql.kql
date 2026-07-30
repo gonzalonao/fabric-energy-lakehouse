@@ -1,0 +1,147 @@
+// P2 Phase A — SQL to KQL translation drill
+//
+// Five queries taken from work already done against Gold in P1, not from a tutorial.
+// Translate each one BY HAND. Cheat sheet allowed; no AI, no worked examples.
+//
+// The harness below defines the three tables as `datatable` literals, so every
+// translation is runnable against an empty `eh_energy` database before a single real
+// row has been ingested. Paste the harness plus one translation into a KQL queryset and
+// run it.
+//
+// The point is not the syntax. It is noticing where KQL is genuinely a different shape:
+// time bucketing is a function on the value rather than a GROUP BY expression, "latest
+// row per key" is one operator rather than a self-join, and there is no SELECT list at
+// the front — the pipeline reads in the order it executes.
+
+let dim_technology = datatable(technology: string, is_renewable: bool)
+[
+    "Eólica", true,
+    "Solar fotovoltaica", true,
+    "Hidráulica", true,
+    "Nuclear", false,
+    "Ciclo combinado", false,
+    "Carbón", false,
+];
+let fact_demand_daily = datatable(date: datetime, demand_mwh: real)
+[
+    datetime(2024-03-01), 812345.0,
+    datetime(2024-03-02), 745120.5,
+    datetime(2024-03-15), 798004.2,
+    datetime(2024-04-01), 760331.8,
+    datetime(2024-04-02), 771902.4,
+    datetime(2025-03-01), 803118.9,
+];
+let fact_generation_daily = datatable(date: datetime, technology: string, generation_mwh: real)
+[
+    datetime(2024-03-01), "Eólica", 210433.0,
+    datetime(2024-03-01), "Solar fotovoltaica", 118220.5,
+    datetime(2024-03-01), "Nuclear", 152900.0,
+    datetime(2024-03-01), "Ciclo combinado", 96110.2,
+    datetime(2024-03-02), "Eólica", 233871.4,
+    datetime(2024-03-02), "Hidráulica", 88420.0,
+    datetime(2024-03-02), "Carbón", 4120.6,
+    datetime(2024-04-01), "Eólica", 175002.3,
+    datetime(2024-04-01), "Nuclear", 151004.8,
+];
+let fact_price_hourly = datatable(datetime_utc: datetime, series: string, price_eur_mwh: real)
+[
+    datetime(2024-03-01 00:00), "Precio mercado spot", 84.21,
+    datetime(2024-03-01 01:00), "Precio mercado spot", 79.05,
+    datetime(2024-03-01 02:00), "Precio mercado spot", -3.40,
+    datetime(2024-03-01 19:00), "Precio mercado spot", 168.90,
+    datetime(2024-03-01 20:00), "Precio mercado spot", 175.33,
+    datetime(2024-03-02 19:00), "Precio mercado spot", 141.77,
+    datetime(2024-03-01 00:00), "PVPC", 121.44,
+    datetime(2024-03-01 19:00), "PVPC", 203.18,
+];
+//
+// ---------------------------------------------------------------------------
+// 1. Monthly demand totals
+//
+//    SELECT
+//        YEAR(date)  AS year,
+//        MONTH(date) AS month,
+//        SUM(demand_mwh) AS demand_mwh,
+//        COUNT(*)        AS days
+//    FROM gold.fact_demand_daily
+//    GROUP BY YEAR(date), MONTH(date)
+//    ORDER BY year, month;
+//
+//    Watch for: KQL has no GROUP BY. What replaces the two date-part expressions?
+// ---------------------------------------------------------------------------
+
+// your KQL here
+
+
+//
+// ---------------------------------------------------------------------------
+// 2. Renewables share for one month (this is C7 proof 2, the star join)
+//
+//    SELECT
+//        SUM(CASE WHEN t.is_renewable = 1 THEN f.generation_mwh ELSE 0 END)
+//            / SUM(f.generation_mwh) * 100 AS renewables_share_pct
+//    FROM gold.fact_generation_daily AS f
+//    JOIN gold.dim_technology AS t ON f.technology = t.technology
+//    WHERE YEAR(f.date) = 2024 AND MONTH(f.date) = 3;
+//
+//    Watch for: KQL joins have *flavors* and the default is not SQL's inner join.
+//    Which flavor do you actually want here, and what would the default do to a fact
+//    row whose technology appears twice in the dimension?
+// ---------------------------------------------------------------------------
+
+// your KQL here
+
+
+//
+// ---------------------------------------------------------------------------
+// 3. The ten most expensive spot hours
+//
+//    SELECT TOP 10 datetime_utc, price_eur_mwh
+//    FROM gold.fact_price_hourly
+//    WHERE series = 'Precio mercado spot'
+//    ORDER BY price_eur_mwh DESC;
+//
+//    Watch for: there are two ways to write this in KQL and one of them is a single
+//    operator. Find that one.
+// ---------------------------------------------------------------------------
+
+// your KQL here
+
+
+//
+// ---------------------------------------------------------------------------
+// 4. Freshness — the latest loaded row per price series, with its price
+//
+//    SELECT series, datetime_utc, price_eur_mwh
+//    FROM (
+//        SELECT *, ROW_NUMBER() OVER (PARTITION BY series ORDER BY datetime_utc DESC) AS rn
+//        FROM gold.fact_price_hourly
+//    ) x
+//    WHERE rn = 1;
+//
+//    Watch for: this is the query that most rewards knowing KQL. The whole subquery
+//    collapses to one aggregation function. Which, and what does its second argument do?
+// ---------------------------------------------------------------------------
+
+// your KQL here
+
+
+//
+// ---------------------------------------------------------------------------
+// 5. Seven-day rolling average of the daily mean spot price
+//
+//    WITH daily AS (
+//        SELECT CAST(datetime_utc AS date) AS date, AVG(price_eur_mwh) AS avg_price
+//        FROM gold.fact_price_hourly
+//        WHERE series = 'Precio mercado spot'
+//        GROUP BY CAST(datetime_utc AS date)
+//    )
+//    SELECT date, AVG(avg_price) OVER (ORDER BY date ROWS BETWEEN 6 PRECEDING AND CURRENT ROW)
+//    FROM daily;
+//
+//    Watch for: the hardest of the five, and the one where KQL stops resembling SQL.
+//    KQL has no windowed OVER clause. The idiomatic route collapses the series into an
+//    array first — look at make-series, then at the series_* function family.
+// ---------------------------------------------------------------------------
+
+// your KQL here
